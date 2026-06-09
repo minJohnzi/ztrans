@@ -174,6 +174,22 @@ describe("translateMarkdown", () => {
     expect(JSON.stringify(provider.requests)).not.toContain("./cover.png");
   });
 
+  it("does not require a provider for protected-only frontmatter without body chunks", async () => {
+    const markdown = ["---", "slug: stable-post", "date: 2026-06-09", "draft: false", "---"].join(
+      "\n",
+    );
+
+    const result = await translateMarkdown({
+      markdown,
+      targetLocale: "fr",
+    });
+
+    expect(result.markdown).toBe(markdown);
+    expect(result.chunks).toEqual([]);
+    expect(result.warnings).toEqual([]);
+    expect(result.usage).toBeUndefined();
+  });
+
   it("createTranslator applies defaults without mutating options", async () => {
     const provider = new MockProvider(["# Titre\n"]);
     const defaults = {

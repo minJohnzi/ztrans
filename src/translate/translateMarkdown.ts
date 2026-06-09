@@ -45,15 +45,14 @@ export async function translateMarkdown(
     (chunk) => chunk.frontmatterMarkdown,
   )?.frontmatterMarkdown;
   const translatableChunks = chunks.filter((chunk) => chunk.markdown.length > 0);
+  const getProviderClient = createProviderClientGetter(options);
 
   if (translatableChunks.length === 0) {
     if (frontmatterMarkdown) {
-      const providerClient =
-        options.providerClient ?? new OpenAICompatibleClient(options.provider ?? {});
       const translatedFrontmatter = await translateFrontmatter(
         frontmatterMarkdown,
         options,
-        providerClient,
+        getProviderClient,
       );
 
       return {
@@ -75,11 +74,10 @@ export async function translateMarkdown(
     };
   }
 
-  const providerClient =
-    options.providerClient ?? new OpenAICompatibleClient(options.provider ?? {});
   const translatedFrontmatter = frontmatterMarkdown
-    ? await translateFrontmatter(frontmatterMarkdown, options, providerClient)
+    ? await translateFrontmatter(frontmatterMarkdown, options, getProviderClient)
     : undefined;
+  const providerClient = getProviderClient();
   const translatedChunks = await translateChunksWithConcurrency(
     translatableChunks,
     concurrency,
@@ -114,6 +112,15 @@ export async function translateMarkdown(
     ],
     warnings,
     usage,
+  };
+}
+
+function createProviderClientGetter(options: TranslateMarkdownOptions): () => LlmProvider {
+  let providerClient = options.providerClient;
+
+  return () => {
+    providerClient ??= new OpenAICompatibleClient(options.provider ?? {});
+    return providerClient;
   };
 }
 
@@ -247,7 +254,7 @@ interface TranslatedFrontmatter {
 async function translateFrontmatter(
   frontmatterMarkdown: string,
   options: TranslateMarkdownOptions,
-  providerClient: LlmProvider,
+  getProviderClient: () => LlmProvider,
 ): Promise<TranslatedFrontmatter> {
   const frontmatterSource = extractFrontmatterSource(frontmatterMarkdown);
   const document = parseDocument(frontmatterSource);
@@ -270,7 +277,7 @@ async function translateFrontmatter(
   let frontmatterIndex = -translatableEntries.length;
 
   for (const { key, value } of translatableEntries) {
-    const response = await providerClient.complete({
+    const response = await getProviderClient().complete({
       temperature: options.provider?.temperature,
       messages: [
         {

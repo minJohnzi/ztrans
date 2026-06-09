@@ -1,3 +1,5 @@
+import type { LlmProvider } from "./provider/types.js";
+
 export type Locale = "zh" | "en" | (string & {});
 
 export interface ProviderConfig {
@@ -13,25 +15,14 @@ export interface GlossaryTerm {
   note?: string;
 }
 
-export interface ProviderClient {
-  complete(request: {
-    messages: Array<{
-      role: "system" | "user" | "assistant";
-      content: string;
-    }>;
-    temperature?: number;
-  }): Promise<{
-    content: string;
-    usage?: TokenUsage;
-  }>;
-}
+export type ProviderClient = LlmProvider;
 
 export interface TranslateMarkdownOptions {
   markdown: string;
   sourceLocale?: Locale;
   targetLocale: Locale;
   provider?: ProviderConfig;
-  providerClient?: ProviderClient;
+  providerClient?: LlmProvider;
   glossary?: GlossaryTerm[];
   styleGuide?: string;
   maxChunkChars?: number;

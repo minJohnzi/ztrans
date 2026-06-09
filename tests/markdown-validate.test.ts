@@ -40,6 +40,37 @@ describe("validateMarkdownStructure", () => {
     ]);
   });
 
+  it("allows natural-language frontmatter values to change", () => {
+    expect(
+      validateMarkdownStructure(
+        "---\ntitle: Original title\ndescription: Original description\nslug: stable-post\n---\n# Title",
+        "---\ntitle: Titre traduit\ndescription: Description traduite\nslug: stable-post\n---\n# Titre",
+      ),
+    ).toEqual([]);
+  });
+
+  it("warns when protected frontmatter values change alongside translated fields", () => {
+    expect(
+      validateMarkdownStructure(
+        "---\ntitle: Original title\ndescription: Original description\nslug: stable-post\n---\n# Title",
+        "---\ntitle: Titre traduit\ndescription: Description traduite\nslug: translated-post\n---\n# Titre",
+      ),
+    ).toEqual([
+      'Frontmatter value changed for key slug: expected "stable-post", received "translated-post".',
+    ]);
+  });
+
+  it("warns when non-string natural-language frontmatter values change", () => {
+    expect(
+      validateMarkdownStructure(
+        "---\ntitle:\n  - Original\nslug: stable-post\n---\n# Title",
+        "---\ntitle:\n  - Traduit\nslug: stable-post\n---\n# Titre",
+      ),
+    ).toEqual([
+      'Frontmatter value changed for key title: expected ["Original"], received ["Traduit"].',
+    ]);
+  });
+
   it("warns when a source frontmatter key is missing", () => {
     expect(
       validateMarkdownStructure(

@@ -28,6 +28,14 @@ export interface MarkdownStructureSignature {
   imageUrls: string[];
 }
 
+const TRANSLATABLE_FRONTMATTER_KEYS = new Set([
+  "title",
+  "summary",
+  "description",
+  "seoTitle",
+  "seoDescription",
+]);
+
 export function createStructureSignature(markdown: string): MarkdownStructureSignature {
   const parsed = parseFrontmatter(markdown);
   const tree = parseMarkdownAst(parsed.content);
@@ -274,7 +282,11 @@ function compareFrontmatter(
       continue;
     }
 
-    if (!frontmatterValuesEqual(expected.data[key], received.data[key])) {
+    if (!frontmatterValueCanBeTranslated(key, expected.data[key], received.data[key])) {
+      if (frontmatterValuesEqual(expected.data[key], received.data[key])) {
+        continue;
+      }
+
       warnings.push(
         `Frontmatter value changed for key ${key}: expected ${formatFrontmatterValue(
           expected.data[key],
@@ -288,6 +300,18 @@ function compareFrontmatter(
       warnings.push(`Frontmatter key added: ${key}.`);
     }
   }
+}
+
+function frontmatterValueCanBeTranslated(
+  key: string,
+  expected: FrontmatterValue,
+  received: FrontmatterValue,
+): boolean {
+  return (
+    TRANSLATABLE_FRONTMATTER_KEYS.has(key) &&
+    typeof expected === "string" &&
+    typeof received === "string"
+  );
 }
 
 function compareHeadingDepths(

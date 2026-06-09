@@ -182,7 +182,7 @@ Glossary values are inserted into translation prompts as caller-supplied data. F
 
 ## Markdown Preservation and Validation
 
-The translator parses Markdown, translates text chunks, and asks the provider to preserve Markdown structure. Validation checks frontmatter keys, heading structure, link and image URLs, inline code values, and fenced code block count/language. In v1, fenced code body text is not programmatically rewritten or protected beyond prompt instructions and validation metadata.
+The translator parses Markdown, translates text chunks, and asks the provider to preserve Markdown structure. Natural-language frontmatter string keys such as `title`, `summary`, `description`, `seoTitle`, and `seoDescription` are translated, while structural frontmatter keys such as `slug`, `date`, `tags`, `category`, `cover`, `canonical`, and non-string values are preserved. Validation checks protected frontmatter keys, heading structure, link and image URLs, inline code values, and fenced code block count/language. In v1, fenced code body text is not programmatically rewritten or protected beyond prompt instructions and validation metadata.
 
 Validation warnings are returned in library results and surfaced by the CLI. If a translation completes with warnings, the CLI reports them and exits non-zero so automation can catch structure drift. `--json` returns machine-readable success, warning, and error payloads.
 

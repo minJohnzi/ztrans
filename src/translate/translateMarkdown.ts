@@ -4,6 +4,7 @@ import { validateMarkdownStructure } from "../markdown/validate.js";
 import { TranslatorError } from "../errors.js";
 import { OpenAICompatibleClient } from "../provider/openaiCompatibleClient.js";
 import type { LlmProvider } from "../provider/types.js";
+import { parseDocument, isMap } from "yaml";
 import type {
   ChunkResult,
   TokenUsage,
@@ -27,6 +28,13 @@ interface TranslatedChunk {
 
 const DEFAULT_MAX_RETRIES = 1;
 const DEFAULT_CONCURRENCY = 1;
+const TRANSLATABLE_FRONTMATTER_KEYS = [
+  "title",
+  "summary",
+  "description",
+  "seoTitle",
+  "seoDescription",
+] as const;
 
 export async function translateMarkdown(
   options: TranslateMarkdownOptions,
@@ -39,6 +47,25 @@ export async function translateMarkdown(
   const translatableChunks = chunks.filter((chunk) => chunk.markdown.length > 0);
 
   if (translatableChunks.length === 0) {
+    if (frontmatterMarkdown) {
+      const providerClient =
+        options.providerClient ?? new OpenAICompatibleClient(options.provider ?? {});
+      const translatedFrontmatter = await translateFrontmatter(
+        frontmatterMarkdown,
+        options,
+        providerClient,
+      );
+
+      return {
+        markdown: translatedFrontmatter.markdown.trimEnd(),
+        sourceLocale: options.sourceLocale,
+        targetLocale: options.targetLocale,
+        chunks: translatedFrontmatter.chunks,
+        warnings: translatedFrontmatter.warnings,
+        usage: aggregateUsage(translatedFrontmatter.usages),
+      };
+    }
+
     return {
       markdown: frontmatterMarkdown?.trimEnd() ?? "",
       sourceLocale: options.sourceLocale,
@@ -50,6 +77,9 @@ export async function translateMarkdown(
 
   const providerClient =
     options.providerClient ?? new OpenAICompatibleClient(options.provider ?? {});
+  const translatedFrontmatter = frontmatterMarkdown
+    ? await translateFrontmatter(frontmatterMarkdown, options, providerClient)
+    : undefined;
   const translatedChunks = await translateChunksWithConcurrency(
     translatableChunks,
     concurrency,
@@ -58,21 +88,30 @@ export async function translateMarkdown(
   );
 
   const markdown = prependFrontmatter(
-    frontmatterMarkdown,
+    translatedFrontmatter?.markdown,
     translatedChunks.map((chunk) => chunk.markdown).join("\n\n"),
   );
-  const warnings = translatedChunks.flatMap((chunk) =>
-    chunk.metadata.warnings.map(
-      (warning) => `Chunk ${chunk.metadata.index} validation failed: ${warning}`,
+  const warnings = [
+    ...(translatedFrontmatter?.warnings ?? []),
+    ...translatedChunks.flatMap((chunk) =>
+      chunk.metadata.warnings.map(
+        (warning) => `Chunk ${chunk.metadata.index} validation failed: ${warning}`,
+      ),
     ),
-  );
-  const usage = aggregateUsage(translatedChunks.map((chunk) => chunk.usage));
+  ];
+  const usage = aggregateUsage([
+    ...(translatedFrontmatter?.usages ?? []),
+    ...translatedChunks.map((chunk) => chunk.usage),
+  ]);
 
   return {
     markdown,
     sourceLocale: options.sourceLocale,
     targetLocale: options.targetLocale,
-    chunks: translatedChunks.map((chunk) => chunk.metadata),
+    chunks: [
+      ...(translatedFrontmatter?.chunks ?? []),
+      ...translatedChunks.map((chunk) => chunk.metadata),
+    ],
     warnings,
     usage,
   };
@@ -198,6 +237,79 @@ async function translateChunk(
   };
 }
 
+interface TranslatedFrontmatter {
+  markdown: string;
+  chunks: ChunkResult[];
+  warnings: string[];
+  usages: Array<TokenUsage | undefined>;
+}
+
+async function translateFrontmatter(
+  frontmatterMarkdown: string,
+  options: TranslateMarkdownOptions,
+  providerClient: LlmProvider,
+): Promise<TranslatedFrontmatter> {
+  const frontmatterSource = extractFrontmatterSource(frontmatterMarkdown);
+  const document = parseDocument(frontmatterSource);
+  const data = document.toJSON() as unknown;
+
+  if (!isRecord(data) || !isMap(document.contents)) {
+    return {
+      markdown: frontmatterMarkdown,
+      chunks: [],
+      warnings: [],
+      usages: [],
+    };
+  }
+
+  const translatableEntries = TRANSLATABLE_FRONTMATTER_KEYS.filter(
+    (key) => typeof data[key] === "string",
+  ).map((key) => ({ key, value: data[key] as string }));
+  const chunks: ChunkResult[] = [];
+  const usages: Array<TokenUsage | undefined> = [];
+  let frontmatterIndex = -translatableEntries.length;
+
+  for (const { key, value } of translatableEntries) {
+    const response = await providerClient.complete({
+      temperature: options.provider?.temperature,
+      messages: [
+        {
+          role: "system",
+          content: createSystemPrompt(options),
+        },
+        {
+          role: "user",
+          content: createFrontmatterFieldPrompt({
+            sourceLocale: options.sourceLocale,
+            targetLocale: options.targetLocale,
+            glossary: options.glossary,
+            styleGuide: options.styleGuide,
+            key,
+            value,
+          }),
+        },
+      ],
+    });
+    const translatedValue = cleanModelOutput(response.content);
+    document.set(key, translatedValue);
+    usages.push(response.usage);
+    chunks.push({
+      index: frontmatterIndex,
+      inputChars: value.length,
+      outputChars: translatedValue.length,
+      warnings: [],
+    });
+    frontmatterIndex += 1;
+  }
+
+  return {
+    markdown: serializeFrontmatter(String(document)),
+    chunks,
+    warnings: [],
+    usages,
+  };
+}
+
 function shouldValidateStructure(options: TranslateMarkdownOptions): boolean {
   return options.validateStructure !== false;
 }
@@ -239,6 +351,52 @@ function prependFrontmatter(frontmatterMarkdown: string | undefined, markdown: s
   }
 
   return `${frontmatterMarkdown}${translatedMarkdown}`;
+}
+
+function extractFrontmatterSource(frontmatterMarkdown: string): string {
+  return frontmatterMarkdown
+    .replace(/^\s*---[^\S\r\n]*(?:\r?\n|$)/, "")
+    .replace(/\r?\n---[^\S\r\n]*(?:\r?\n|$)\s*$/, "");
+}
+
+function serializeFrontmatter(yaml: string): string {
+  return `---\n${yaml.trimEnd()}\n---\n`;
+}
+
+interface FrontmatterFieldPromptOptions {
+  sourceLocale?: string;
+  targetLocale: string;
+  glossary?: TranslateMarkdownOptions["glossary"];
+  styleGuide?: string;
+  key: string;
+  value: string;
+}
+
+function createFrontmatterFieldPrompt(options: FrontmatterFieldPromptOptions): string {
+  return [
+    `Source locale: ${options.sourceLocale ?? "auto"}`,
+    `Target locale: ${options.targetLocale}`,
+    `Frontmatter key: ${options.key}`,
+    "",
+    "Glossary:",
+    options.glossary?.length
+      ? options.glossary
+          .map((term) => `${term.source} => ${term.target}${term.note ? ` (${term.note})` : ""}`)
+          .join("\n")
+      : "No glossary provided.",
+    "",
+    "Style guide:",
+    options.styleGuide?.trim() ? options.styleGuide.trim() : "No style guide provided.",
+    "",
+    "Translate this plain frontmatter field value. It is not a Markdown body or document fragment.",
+    "Return only the translated plain text value.",
+    "Frontmatter field value JSON:",
+    JSON.stringify(options.value),
+  ].join("\n");
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
 function aggregateUsage(usages: Array<TokenUsage | undefined>): TokenUsage | undefined {

@@ -93,19 +93,85 @@ describe("translateMarkdown", () => {
     expect(result.markdown).toBe("# Titre\n\nCorps.");
   });
 
-  it("preserves frontmatter and does not send it to the provider", async () => {
-    const provider = new MockProvider(["# Titre\n"]);
+  it("translates natural-language frontmatter and body without sending protected values", async () => {
+    const provider = new MockProvider(["Titre original", "Description traduite", "# Titre\n"]);
 
     const result = await translateMarkdown({
-      markdown: "---\ntitle: Original\nslug: original\n---\n# Title",
+      markdown: [
+        "---",
+        "title: Original title",
+        "description: Original description",
+        "slug: original",
+        "date: 2026-06-09",
+        "canonical: https://example.com/original",
+        "---",
+        "# Title",
+      ].join("\n"),
       targetLocale: "fr",
       providerClient: provider,
     });
 
-    expect(result.markdown).toBe("---\ntitle: Original\nslug: original\n---\n# Titre");
-    expect(provider.requests).toHaveLength(1);
-    expect(JSON.stringify(provider.requests[0])).not.toContain("slug: original");
-    expect(JSON.stringify(provider.requests[0])).not.toContain("title: Original");
+    expect(result.markdown).toBe(
+      [
+        "---",
+        "title: Titre original",
+        "description: Description traduite",
+        "slug: original",
+        "date: 2026-06-09",
+        "canonical: https://example.com/original",
+        "---",
+        "# Titre",
+      ].join("\n"),
+    );
+    expect(provider.requests).toHaveLength(3);
+    expect(JSON.stringify(provider.requests)).not.toContain("slug: original");
+    expect(JSON.stringify(provider.requests)).not.toContain("2026-06-09");
+    expect(JSON.stringify(provider.requests)).not.toContain("https://example.com/original");
+    expect(JSON.stringify(provider.requests[0])).toContain("plain frontmatter field value");
+    expect(result.chunks.map((chunk) => chunk.index)).toEqual([-2, -1, 0]);
+  });
+
+  it("keeps protected and non-string frontmatter values unchanged", async () => {
+    const provider = new MockProvider(["Titre traduit", "# Titre\n"]);
+
+    const result = await translateMarkdown({
+      markdown: [
+        "---",
+        "title: Original title",
+        "slug: stable-post",
+        "tags:",
+        "  - api",
+        "  - markdown",
+        "category: engineering",
+        "cover: ./cover.png",
+        "draft: false",
+        "views: 12",
+        "---",
+        "# Title",
+      ].join("\n"),
+      targetLocale: "fr",
+      providerClient: provider,
+    });
+
+    expect(result.markdown).toBe(
+      [
+        "---",
+        "title: Titre traduit",
+        "slug: stable-post",
+        "tags:",
+        "  - api",
+        "  - markdown",
+        "category: engineering",
+        "cover: ./cover.png",
+        "draft: false",
+        "views: 12",
+        "---",
+        "# Titre",
+      ].join("\n"),
+    );
+    expect(provider.requests).toHaveLength(2);
+    expect(JSON.stringify(provider.requests)).not.toContain("stable-post");
+    expect(JSON.stringify(provider.requests)).not.toContain("./cover.png");
   });
 
   it("createTranslator applies defaults without mutating options", async () => {

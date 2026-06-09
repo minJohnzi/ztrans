@@ -5,9 +5,59 @@ import {
 } from "../src/markdown/validate.js";
 
 describe("validateMarkdownStructure", () => {
+  it("warns when source frontmatter is dropped", () => {
+    expect(validateMarkdownStructure("---\nslug: original\n---\n# Title", "# Title")).toEqual([
+      "Frontmatter presence changed: expected present, received absent."
+    ]);
+  });
+
+  it("warns when non-translatable frontmatter values change", () => {
+    const source = [
+      "---",
+      "slug: stable-post",
+      "date: 2026-06-09",
+      "tags:",
+      "  - api",
+      "  - markdown",
+      "category: engineering",
+      "---",
+      "# Title"
+    ].join("\n");
+    const translated = [
+      "---",
+      "slug: translated-post",
+      "date: 2026-06-10",
+      "tags:",
+      "  - markdown",
+      "  - api",
+      "category: docs",
+      "---",
+      "# Title"
+    ].join("\n");
+
+    expect(validateMarkdownStructure(source, translated)).toEqual([
+      'Frontmatter value changed for key category: expected "engineering", received "docs".',
+      'Frontmatter value changed for key date: expected "2026-06-09T00:00:00.000Z", received "2026-06-10T00:00:00.000Z".',
+      'Frontmatter value changed for key slug: expected "stable-post", received "translated-post".',
+      'Frontmatter value changed for key tags: expected ["api","markdown"], received ["markdown","api"].'
+    ]);
+  });
+
+  it("warns when a source frontmatter key is missing", () => {
+    expect(
+      validateMarkdownStructure("---\nslug: stable-post\ncategory: engineering\n---\n# Title", "---\nslug: stable-post\n---\n# Title")
+    ).toEqual(["Frontmatter key missing: category."]);
+  });
+
   it("warns when heading count changes", () => {
     expect(validateMarkdownStructure("# One\n\n## Two", "# Uno")).toEqual([
       "Heading count changed: expected 2, received 1."
+    ]);
+  });
+
+  it("warns when heading depth changes", () => {
+    expect(validateMarkdownStructure("# Title", "## Title")).toEqual([
+      "Heading depth changed at index 0: expected 1, received 2."
     ]);
   });
 
@@ -15,6 +65,18 @@ describe("validateMarkdownStructure", () => {
     expect(
       validateMarkdownStructure("```ts\nconst value = 1;\n```", "```js\nconst value = 1;\n```")
     ).toEqual(["Code block language changed at index 0: expected ts, received js."]);
+  });
+
+  it("warns when inline code count changes", () => {
+    expect(validateMarkdownStructure("Run `pnpm install` before `pnpm test`.", "Run `pnpm install`.")).toEqual([
+      "Inline code count changed: expected 2, received 1."
+    ]);
+  });
+
+  it("warns when inline code values change", () => {
+    expect(validateMarkdownStructure("Use `user_id` in queries.", "Use `userId` in queries.")).toEqual([
+      "Inline code changed at index 0: expected user_id, received userId."
+    ]);
   });
 
   it("warns when link URL count changes", () => {
@@ -77,8 +139,17 @@ describe("createStructureSignature", () => {
     );
 
     expect(signature).toEqual({
+      frontmatter: {
+        present: true,
+        data: {
+          draft: false,
+          tags: ["stable"],
+          title: "Parseable"
+        }
+      },
       headings: [{ depth: 1 }],
       codeBlockLanguages: [],
+      inlineCodeValues: [],
       linkUrls: ["https://example.com/docs"],
       imageUrls: ["./diagram.png"]
     });

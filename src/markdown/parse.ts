@@ -9,6 +9,7 @@ import { TranslatorError } from "../errors.js";
 export interface ParsedFrontmatter {
   content: string;
   data: Record<string, unknown>;
+  present: boolean;
 }
 
 export function parseFrontmatter(markdown: string): ParsedFrontmatter {
@@ -16,13 +17,18 @@ export function parseFrontmatter(markdown: string): ParsedFrontmatter {
     const parsed = matter(markdown);
     return {
       content: parsed.content,
-      data: parsed.data
+      data: parsed.data,
+      present: hasFrontmatter(markdown)
     };
   } catch (error) {
     throw new TranslatorError("markdown_parse_failed", "Failed to parse Markdown frontmatter.", {
       reason: error instanceof Error ? error.message : String(error)
     });
   }
+}
+
+function hasFrontmatter(markdown: string): boolean {
+  return /^\s*---(?:\r?\n|$)/.test(markdown);
 }
 
 export function parseMarkdownAst(markdown: string): Root {

@@ -1,6 +1,8 @@
 import { parseStructuredFile, assertPlainObject, throwInvalidConfig } from "../config/loadConfig.js";
 import type { GlossaryTerm } from "../types.js";
 
+const ASCII_CONTROL_CHARACTER_PATTERN = /[\u0000-\u001f\u007f]/;
+
 export async function loadGlossaryFile(filePath?: string): Promise<GlossaryTerm[]> {
   if (!filePath) {
     return [];
@@ -42,11 +44,16 @@ function parseGlossaryTerm(value: unknown): GlossaryTerm {
 }
 
 function requiredString(value: unknown, fieldName: string): string {
-  if (typeof value !== "string" || value.trim().length === 0) {
+  if (typeof value !== "string") {
     throwInvalidConfig(`Glossary field ${fieldName} must be a non-empty string.`);
   }
 
-  return value;
+  const normalized = normalizePromptField(value, fieldName);
+  if (normalized.length === 0) {
+    throwInvalidConfig(`Glossary field ${fieldName} must be a non-empty string.`);
+  }
+
+  return normalized;
 }
 
 function optionalString(value: unknown, fieldName: string): string | undefined {
@@ -58,7 +65,7 @@ function optionalString(value: unknown, fieldName: string): string | undefined {
     throwInvalidConfig(`Glossary field ${fieldName} must be a string.`);
   }
 
-  return meaningfulString(value);
+  return meaningfulString(normalizePromptField(value, fieldName));
 }
 
 function meaningfulString(value: string | undefined): string | undefined {
@@ -67,4 +74,14 @@ function meaningfulString(value: string | undefined): string | undefined {
   }
 
   return value;
+}
+
+function normalizePromptField(value: string, fieldName: string): string {
+  if (ASCII_CONTROL_CHARACTER_PATTERN.test(value)) {
+    throwInvalidConfig(
+      `Glossary field ${fieldName} must be a single-line prompt-safe string.`
+    );
+  }
+
+  return value.trim();
 }

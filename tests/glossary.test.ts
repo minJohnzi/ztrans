@@ -72,6 +72,52 @@ describe("loadGlossaryFile", () => {
     ]);
   });
 
+  it("rejects multiline source values", async () => {
+    const filePath = await writeTempFile(
+      "glossary.json",
+      JSON.stringify({ terms: [{ source: "source\ninjected", target: "target" }] })
+    );
+
+    await expect(loadGlossaryFile(filePath)).rejects.toMatchObject({
+      code: "config_file_invalid"
+    });
+  });
+
+  it("rejects multiline target values", async () => {
+    const filePath = await writeTempFile(
+      "glossary.json",
+      JSON.stringify({ terms: [{ source: "source", target: "target\rinjected" }] })
+    );
+
+    await expect(loadGlossaryFile(filePath)).rejects.toMatchObject({
+      code: "config_file_invalid"
+    });
+  });
+
+  it("rejects multiline note values", async () => {
+    const filePath = await writeTempFile(
+      "glossary.json",
+      JSON.stringify({ terms: [{ source: "source", target: "target", note: "note\ninjected" }] })
+    );
+
+    await expect(loadGlossaryFile(filePath)).rejects.toMatchObject({
+      code: "config_file_invalid"
+    });
+  });
+
+  it("trims valid glossary values", async () => {
+    const filePath = await writeTempFile(
+      "glossary.json",
+      JSON.stringify({
+        terms: [{ source: "  source  ", target: "  target  ", note: "  note  " }]
+      })
+    );
+
+    await expect(loadGlossaryFile(filePath)).resolves.toEqual([
+      { source: "source", target: "target", note: "note" }
+    ]);
+  });
+
   it("throws config_file_invalid for invalid glossary files without leaking contents", async () => {
     const filePath = await writeTempFile(
       "glossary.json",

@@ -50,7 +50,7 @@ export class OpenAICompatibleClient implements LlmProvider {
       });
     }
 
-    const data = (await response.json()) as ChatCompletionsResponse;
+    const data = await parseChatCompletionsResponse(response, url);
     const content = data.choices?.[0]?.message?.content;
 
     if (typeof content !== "string" || content.length === 0) {
@@ -99,14 +99,45 @@ function normalizeBaseUrl(baseUrl?: string): string {
   try {
     const parsed = new URL(baseUrl ?? "https://api.deepseek.com");
 
-    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    if (
+      (parsed.protocol !== "http:" && parsed.protocol !== "https:") ||
+      parsed.username !== "" ||
+      parsed.password !== "" ||
+      parsed.search !== "" ||
+      parsed.hash !== ""
+    ) {
       throw new Error("Unsupported protocol");
     }
 
     return parsed.toString().replace(/\/$/, "");
   } catch {
-    throw new TranslatorError("invalid_base_url", "Invalid LLM provider base URL.", {
-      baseUrl
+    throw new TranslatorError("invalid_base_url", "Invalid LLM provider base URL.");
+  }
+}
+
+async function parseChatCompletionsResponse(
+  response: Response,
+  url: string
+): Promise<ChatCompletionsResponse> {
+  let data: unknown;
+
+  try {
+    data = await response.json();
+  } catch {
+    throw new TranslatorError("provider_response_malformed", "Provider response was not valid JSON.", {
+      url
     });
   }
+
+  if (!isResponseObject(data)) {
+    throw new TranslatorError("provider_response_malformed", "Provider response was not an object.", {
+      url
+    });
+  }
+
+  return data;
+}
+
+function isResponseObject(value: unknown): value is ChatCompletionsResponse {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
 }

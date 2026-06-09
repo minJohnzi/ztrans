@@ -39,6 +39,30 @@ describe("renderGlossaryForPrompt", () => {
   it("renders an explicit empty glossary message", () => {
     expect(renderGlossaryForPrompt([])).toBe("No glossary entries.");
   });
+
+  it("rejects direct-render multiline source values", () => {
+    expect(() =>
+      renderGlossaryForPrompt([{ source: "source\ninjected", target: "target" }])
+    ).toThrow(expect.objectContaining({ code: "config_file_invalid" }));
+  });
+
+  it("rejects direct-render control characters in target values", () => {
+    expect(() =>
+      renderGlossaryForPrompt([{ source: "source", target: "target\u0000injected" }])
+    ).toThrow(expect.objectContaining({ code: "config_file_invalid" }));
+  });
+
+  it("rejects direct-render multiline note values", () => {
+    expect(() =>
+      renderGlossaryForPrompt([{ source: "source", target: "target", note: "note\rinjected" }])
+    ).toThrow(expect.objectContaining({ code: "config_file_invalid" }));
+  });
+
+  it("trims direct-render glossary values", () => {
+    expect(
+      renderGlossaryForPrompt([{ source: "  source  ", target: "  target  ", note: "  note  " }])
+    ).toBe("source => target (note)");
+  });
 });
 
 describe("loadGlossaryFile", () => {

@@ -23,7 +23,7 @@ export function renderGlossaryForPrompt(terms: GlossaryTerm[] = []): string {
     return "No glossary entries.";
   }
 
-  return terms.map(renderGlossaryTerm).join("\n");
+  return terms.map(normalizeGlossaryTerm).map(renderGlossaryTerm).join("\n");
 }
 
 function renderGlossaryTerm(term: GlossaryTerm): string {
@@ -36,6 +36,14 @@ function renderGlossaryTerm(term: GlossaryTerm): string {
 function parseGlossaryTerm(value: unknown): GlossaryTerm {
   assertPlainObject(value, "Glossary term must contain an object.");
 
+  return normalizeGlossaryTerm(value);
+}
+
+function normalizeGlossaryTerm(value: {
+  source?: unknown;
+  target?: unknown;
+  note?: unknown;
+}): GlossaryTerm {
   const source = requiredString(value.source, "terms.source");
   const target = requiredString(value.target, "terms.target");
   const note = optionalString(value.note, "terms.note");

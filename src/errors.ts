@@ -16,7 +16,7 @@ const SENSITIVE_DETAIL_KEYS = new Set([
   "authorization",
   "headers",
   "token",
-  "secret"
+  "secret",
 ]);
 
 export class TranslatorError extends Error {
@@ -42,13 +42,13 @@ export function serializeError(error: unknown): SerializedTranslatorError {
     return {
       code: error.code,
       message: error.message,
-      details: sanitizeDetails(error.details)
+      details: sanitizeDetails(error.details),
     };
   }
 
   return {
     code: "unknown_error",
-    message: error instanceof Error ? error.message : String(error)
+    message: error instanceof Error ? error.message : String(error),
   };
 }
 

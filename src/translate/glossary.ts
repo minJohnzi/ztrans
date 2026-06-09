@@ -1,4 +1,8 @@
-import { parseStructuredFile, assertPlainObject, throwInvalidConfig } from "../config/loadConfig.js";
+import {
+  parseStructuredFile,
+  assertPlainObject,
+  throwInvalidConfig,
+} from "../config/loadConfig.js";
 import type { GlossaryTerm } from "../types.js";
 
 const ASCII_CONTROL_CHARACTER_PATTERN = /[\u0000-\u001f\u007f]/;
@@ -86,9 +90,7 @@ function meaningfulString(value: string | undefined): string | undefined {
 
 function normalizePromptField(value: string, fieldName: string): string {
   if (ASCII_CONTROL_CHARACTER_PATTERN.test(value)) {
-    throwInvalidConfig(
-      `Glossary field ${fieldName} must be a single-line prompt-safe string.`
-    );
+    throwInvalidConfig(`Glossary field ${fieldName} must be a single-line prompt-safe string.`);
   }
 
   return value.trim();

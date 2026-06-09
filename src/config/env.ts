@@ -2,7 +2,7 @@ import type { ProviderConfig } from "../types.js";
 
 const DEFAULT_PROVIDER_CONFIG: ProviderConfig = {
   baseUrl: "https://api.deepseek.com",
-  model: "deepseek-chat"
+  model: "deepseek-chat",
 };
 
 export interface ResolveProviderConfigInput {
@@ -21,23 +21,23 @@ export function resolveProviderConfig(input: ResolveProviderConfigInput = {}): P
       input.cli?.apiKey,
       input.config?.apiKey,
       llmEnv.apiKey,
-      providerEnv.apiKey
+      providerEnv.apiKey,
     ),
     baseUrl:
       firstMeaningfulString(
         input.cli?.baseUrl,
         input.config?.baseUrl,
         llmEnv.baseUrl,
-        providerEnv.baseUrl
+        providerEnv.baseUrl,
       ) ?? DEFAULT_PROVIDER_CONFIG.baseUrl,
     model:
       firstMeaningfulString(
         input.cli?.model,
         input.config?.model,
         llmEnv.model,
-        providerEnv.model
+        providerEnv.model,
       ) ?? DEFAULT_PROVIDER_CONFIG.model,
-    temperature: firstMeaningfulNumber(input.cli?.temperature, input.config?.temperature)
+    temperature: firstMeaningfulNumber(input.cli?.temperature, input.config?.temperature),
   };
 }
 
@@ -45,7 +45,7 @@ function resolveLlmEnv(env: Record<string, string | undefined>): ProviderConfig 
   return {
     apiKey: env.LLM_API_KEY,
     baseUrl: env.LLM_BASE_URL,
-    model: env.LLM_MODEL
+    model: env.LLM_MODEL,
   };
 }
 
@@ -53,7 +53,7 @@ function resolveProviderSpecificEnv(env: Record<string, string | undefined>): Pr
   return {
     apiKey: firstMeaningfulString(env.DEEPSEEK_API_KEY, env.OPENAI_API_KEY),
     baseUrl: firstMeaningfulString(env.DEEPSEEK_BASE_URL, env.OPENAI_BASE_URL),
-    model: firstMeaningfulString(env.DEEPSEEK_MODEL, env.OPENAI_MODEL)
+    model: firstMeaningfulString(env.DEEPSEEK_MODEL, env.OPENAI_MODEL),
   };
 }
 

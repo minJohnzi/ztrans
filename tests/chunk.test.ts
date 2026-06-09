@@ -15,9 +15,9 @@ describe("chunkMarkdown", () => {
         "const second = 2;",
         "```",
         "",
-        "After."
+        "After.",
       ].join("\n"),
-      { maxChars: 20 }
+      { maxChars: 20 },
     );
 
     const codeChunk = chunks.find((chunk) => chunk.markdown.includes("```ts"));
@@ -29,21 +29,31 @@ describe("chunkMarkdown", () => {
 
   it("tracks heading path", () => {
     const chunks = chunkMarkdown(
-      ["# Article", "", "Intro.", "", "## Section", "", "Body text.", "", "### Detail", "", "More text."].join(
-        "\n"
-      ),
-      { maxChars: 25 }
+      [
+        "# Article",
+        "",
+        "Intro.",
+        "",
+        "## Section",
+        "",
+        "Body text.",
+        "",
+        "### Detail",
+        "",
+        "More text.",
+      ].join("\n"),
+      { maxChars: 25 },
     );
 
     expect(chunks.find((chunk) => chunk.markdown.includes("# Article"))?.headingPath).toEqual([]);
     expect(chunks.find((chunk) => chunk.markdown.includes("Body text."))?.headingPath).toEqual([
       "Article",
-      "Section"
+      "Section",
     ]);
     expect(chunks.find((chunk) => chunk.markdown.includes("More text."))?.headingPath).toEqual([
       "Article",
       "Section",
-      "Detail"
+      "Detail",
     ]);
   });
 
@@ -57,9 +67,9 @@ describe("chunkMarkdown", () => {
         "| Alpha | 1 |",
         "| Beta | 2 |",
         "",
-        "Done."
+        "Done.",
       ].join("\n"),
-      { maxChars: 20 }
+      { maxChars: 20 },
     );
 
     const tableChunk = chunks.find((chunk) => chunk.markdown.includes("Alpha"));
@@ -70,19 +80,39 @@ describe("chunkMarkdown", () => {
 
   it("preserves chunk order", () => {
     const chunks = chunkMarkdown(
-      ["# One", "", "First paragraph.", "", "## Two", "", "Second paragraph.", "", "## Three", "", "Third paragraph."].join(
-        "\n"
-      ),
-      { maxChars: 30 }
+      [
+        "# One",
+        "",
+        "First paragraph.",
+        "",
+        "## Two",
+        "",
+        "Second paragraph.",
+        "",
+        "## Three",
+        "",
+        "Third paragraph.",
+      ].join("\n"),
+      { maxChars: 30 },
     );
 
     const combinedMarkdown = chunks.map((chunk) => chunk.markdown.trim()).join("\n\n");
 
-    expect(combinedMarkdown.indexOf("# One")).toBeLessThan(combinedMarkdown.indexOf("First paragraph."));
-    expect(combinedMarkdown.indexOf("First paragraph.")).toBeLessThan(combinedMarkdown.indexOf("## Two"));
-    expect(combinedMarkdown.indexOf("## Two")).toBeLessThan(combinedMarkdown.indexOf("Second paragraph."));
-    expect(combinedMarkdown.indexOf("Second paragraph.")).toBeLessThan(combinedMarkdown.indexOf("## Three"));
-    expect(combinedMarkdown.indexOf("## Three")).toBeLessThan(combinedMarkdown.indexOf("Third paragraph."));
+    expect(combinedMarkdown.indexOf("# One")).toBeLessThan(
+      combinedMarkdown.indexOf("First paragraph."),
+    );
+    expect(combinedMarkdown.indexOf("First paragraph.")).toBeLessThan(
+      combinedMarkdown.indexOf("## Two"),
+    );
+    expect(combinedMarkdown.indexOf("## Two")).toBeLessThan(
+      combinedMarkdown.indexOf("Second paragraph."),
+    );
+    expect(combinedMarkdown.indexOf("Second paragraph.")).toBeLessThan(
+      combinedMarkdown.indexOf("## Three"),
+    );
+    expect(combinedMarkdown.indexOf("## Three")).toBeLessThan(
+      combinedMarkdown.indexOf("Third paragraph."),
+    );
     expect(chunks.map((chunk) => chunk.index)).toEqual(chunks.map((_, index) => index));
   });
 
@@ -94,19 +124,23 @@ describe("chunkMarkdown", () => {
     const chunks = chunkMarkdown("---\ntitle: Test\nslug: test\n---\n# H", { maxChars: 100 });
 
     expect(chunks[0]).toMatchObject({
-      frontmatterMarkdown: "---\ntitle: Test\nslug: test\n---\n"
+      frontmatterMarkdown: "---\ntitle: Test\nslug: test\n---\n",
     });
     expect(chunks[0].markdown).toBe("# H\n");
     expect(chunks[0].markdown).not.toContain("slug: test");
   });
 
   it("uses parent heading path for heading-only chunks", () => {
-    const chunks = chunkMarkdown(["# Article", "", "## Section", "", "Body."].join("\n"), { maxChars: 1 });
+    const chunks = chunkMarkdown(["# Article", "", "## Section", "", "Body."].join("\n"), {
+      maxChars: 1,
+    });
 
-    expect(chunks.map((chunk) => ({ markdown: chunk.markdown.trim(), headingPath: chunk.headingPath }))).toEqual([
+    expect(
+      chunks.map((chunk) => ({ markdown: chunk.markdown.trim(), headingPath: chunk.headingPath })),
+    ).toEqual([
       { markdown: "# Article", headingPath: [] },
       { markdown: "## Section", headingPath: ["Article"] },
-      { markdown: "Body.", headingPath: ["Article", "Section"] }
+      { markdown: "Body.", headingPath: ["Article", "Section"] },
     ]);
   });
 
@@ -127,8 +161,8 @@ describe("chunkMarkdown", () => {
       {
         index: 0,
         markdown: "# H\n",
-        headingPath: []
-      }
+        headingPath: [],
+      },
     ]);
   });
 });

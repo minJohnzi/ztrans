@@ -47,7 +47,7 @@ export async function parseStructuredFile(filePath: string): Promise<unknown> {
 
 export function assertPlainObject(
   value: unknown,
-  message = "Config file must contain an object."
+  message = "Config file must contain an object.",
 ): asserts value is Record<string, unknown> {
   if (!isPlainObject(value)) {
     throwInvalidConfig(message);
@@ -55,14 +55,18 @@ export function assertPlainObject(
 }
 
 export function throwInvalidConfig(message: string, filePath?: string): never {
-  throw new TranslatorError("config_file_invalid", message, filePath ? { path: filePath } : undefined);
+  throw new TranslatorError(
+    "config_file_invalid",
+    message,
+    filePath ? { path: filePath } : undefined,
+  );
 }
 
 function parseConfigObject(value: Record<string, unknown>): TranslatorConfigFile {
   return {
     provider: parseProviderConfig(value.provider),
     translation: parseTranslationConfig(value.translation),
-    quality: parseQualityConfig(value.quality)
+    quality: parseQualityConfig(value.quality),
   };
 }
 
@@ -77,13 +81,11 @@ function parseProviderConfig(value: unknown): ProviderConfig | undefined {
     apiKey: optionalString(value.apiKey, "provider.apiKey"),
     baseUrl: optionalString(value.baseUrl, "provider.baseUrl"),
     model: optionalString(value.model, "provider.model"),
-    temperature: optionalNumber(value.temperature, "provider.temperature")
+    temperature: optionalNumber(value.temperature, "provider.temperature"),
   };
 }
 
-function parseTranslationConfig(
-  value: unknown
-): TranslatorConfigFile["translation"] | undefined {
+function parseTranslationConfig(value: unknown): TranslatorConfigFile["translation"] | undefined {
   if (value === undefined) {
     return undefined;
   }
@@ -94,7 +96,7 @@ function parseTranslationConfig(
     sourceLocale: optionalString(value.sourceLocale, "translation.sourceLocale"),
     targetLocale: optionalString(value.targetLocale, "translation.targetLocale"),
     maxChunkChars: optionalNumber(value.maxChunkChars, "translation.maxChunkChars"),
-    concurrency: optionalNumber(value.concurrency, "translation.concurrency")
+    concurrency: optionalNumber(value.concurrency, "translation.concurrency"),
   };
 }
 
@@ -108,10 +110,10 @@ function parseQualityConfig(value: unknown): TranslatorConfigFile["quality"] | u
   return {
     retryOnValidationFailure: optionalBoolean(
       value.retryOnValidationFailure,
-      "quality.retryOnValidationFailure"
+      "quality.retryOnValidationFailure",
     ),
     maxRetries: optionalNumber(value.maxRetries, "quality.maxRetries"),
-    validateStructure: optionalBoolean(value.validateStructure, "quality.validateStructure")
+    validateStructure: optionalBoolean(value.validateStructure, "quality.validateStructure"),
   };
 }
 

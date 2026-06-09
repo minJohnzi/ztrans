@@ -5,13 +5,13 @@ describe("TranslatorError", () => {
   it("serializes stable error codes without leaking metadata", () => {
     const error = new TranslatorError("missing_api_key", "Missing API key", {
       authorization: "Bearer secret-token",
-      safe: "visible"
+      safe: "visible",
     });
 
     expect(serializeError(error)).toEqual({
       code: "missing_api_key",
       message: "Missing API key",
-      details: { safe: "visible" }
+      details: { safe: "visible" },
     });
   });
 
@@ -19,20 +19,20 @@ describe("TranslatorError", () => {
     const error = new TranslatorError("provider_request_failed", "Provider request failed", {
       provider: {
         apiKey: "secret",
-        baseUrl: "https://example.com"
+        baseUrl: "https://example.com",
       },
       request: {
         headers: {
-          Authorization: "Bearer secret"
+          Authorization: "Bearer secret",
         },
-        method: "POST"
+        method: "POST",
       },
       attempts: [
         {
           token: "secret-token",
-          status: 401
-        }
-      ]
+          status: 401,
+        },
+      ],
     });
 
     expect(serializeError(error)).toEqual({
@@ -40,17 +40,17 @@ describe("TranslatorError", () => {
       message: "Provider request failed",
       details: {
         provider: {
-          baseUrl: "https://example.com"
+          baseUrl: "https://example.com",
         },
         request: {
-          method: "POST"
+          method: "POST",
         },
         attempts: [
           {
-            status: 401
-          }
-        ]
-      }
+            status: 401,
+          },
+        ],
+      },
     });
   });
 
@@ -61,13 +61,13 @@ describe("TranslatorError", () => {
       Authorization: "Bearer secret",
       token: "secret-token",
       secret: "secret-value",
-      safe: "visible"
+      safe: "visible",
     });
 
     expect(serializeError(error)).toEqual({
       code: "provider_request_failed",
       message: "Provider request failed",
-      details: { safe: "visible" }
+      details: { safe: "visible" },
     });
   });
 });

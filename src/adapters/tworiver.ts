@@ -3,7 +3,7 @@ import type {
   ChunkResult,
   Locale,
   TranslateMarkdownOptions,
-  TranslateMarkdownResult
+  TranslateMarkdownResult,
 } from "../types.js";
 
 export interface TwoRiverPostTranslation {
@@ -23,8 +23,10 @@ export interface TwoRiverPostTranslation {
   seoDescription?: string | null;
 }
 
-export interface TranslatePostTranslationOptions
-  extends Omit<TranslateMarkdownOptions, "markdown" | "sourceLocale" | "targetLocale"> {
+export interface TranslatePostTranslationOptions extends Omit<
+  TranslateMarkdownOptions,
+  "markdown" | "sourceLocale" | "targetLocale"
+> {
   source: TwoRiverPostTranslation;
   targetLocale: Locale;
 }
@@ -43,20 +45,20 @@ export interface TranslatePostTranslationResult extends TwoRiverPostTranslation 
 }
 
 export async function translatePostTranslation(
-  options: TranslatePostTranslationOptions
+  options: TranslatePostTranslationOptions,
 ): Promise<TranslatePostTranslationResult> {
   const { source, targetLocale, ...translationOptions } = options;
   const commonOptions = {
     ...translationOptions,
     sourceLocale: source.locale,
-    targetLocale
+    targetLocale,
   };
 
   const title = await translatePlainText(source.title, commonOptions);
   const summary = await translatePlainText(source.summary, commonOptions);
   const contentMarkdown = await translateMarkdown({
     ...commonOptions,
-    markdown: source.contentMarkdown
+    markdown: source.contentMarkdown,
   });
   const seoTitle =
     source.seoTitle == null ? null : await translatePlainText(source.seoTitle, commonOptions);
@@ -69,7 +71,7 @@ export async function translatePostTranslation(
     summary,
     contentMarkdown,
     ...(seoTitle ? [seoTitle] : []),
-    ...(seoDescription ? [seoDescription] : [])
+    ...(seoDescription ? [seoDescription] : []),
   ];
 
   return {
@@ -80,17 +82,17 @@ export async function translatePostTranslation(
     seoTitle: seoTitle?.markdown ?? null,
     seoDescription: seoDescription?.markdown ?? null,
     warnings: translatedFields.flatMap((result) => result.warnings),
-    chunks: contentMarkdown.chunks
+    chunks: contentMarkdown.chunks,
   };
 }
 
 async function translatePlainText(
   markdown: string,
-  options: Omit<TranslateMarkdownOptions, "markdown">
+  options: Omit<TranslateMarkdownOptions, "markdown">,
 ): Promise<TranslateMarkdownResult> {
   return translateMarkdown({
     ...options,
     markdown,
-    validateStructure: false
+    validateStructure: false,
   });
 }

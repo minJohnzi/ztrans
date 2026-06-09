@@ -8,7 +8,7 @@ import type {
   ChunkResult,
   TokenUsage,
   TranslateMarkdownOptions,
-  TranslateMarkdownResult
+  TranslateMarkdownResult,
 } from "../types.js";
 import { createChunkPrompt, createSystemPrompt } from "./prompts.js";
 
@@ -28,10 +28,14 @@ interface TranslatedChunk {
 const DEFAULT_MAX_RETRIES = 1;
 const DEFAULT_CONCURRENCY = 1;
 
-export async function translateMarkdown(options: TranslateMarkdownOptions): Promise<TranslateMarkdownResult> {
+export async function translateMarkdown(
+  options: TranslateMarkdownOptions,
+): Promise<TranslateMarkdownResult> {
   const concurrency = normalizeConcurrency(options.concurrency);
   const chunks = chunkMarkdown(options.markdown, { maxChars: options.maxChunkChars });
-  const frontmatterMarkdown = chunks.find((chunk) => chunk.frontmatterMarkdown)?.frontmatterMarkdown;
+  const frontmatterMarkdown = chunks.find(
+    (chunk) => chunk.frontmatterMarkdown,
+  )?.frontmatterMarkdown;
   const translatableChunks = chunks.filter((chunk) => chunk.markdown.length > 0);
 
   if (translatableChunks.length === 0) {
@@ -40,24 +44,27 @@ export async function translateMarkdown(options: TranslateMarkdownOptions): Prom
       sourceLocale: options.sourceLocale,
       targetLocale: options.targetLocale,
       chunks: [],
-      warnings: []
+      warnings: [],
     };
   }
 
-  const providerClient = options.providerClient ?? new OpenAICompatibleClient(options.provider ?? {});
+  const providerClient =
+    options.providerClient ?? new OpenAICompatibleClient(options.provider ?? {});
   const translatedChunks = await translateChunksWithConcurrency(
     translatableChunks,
     concurrency,
     options,
-    providerClient
+    providerClient,
   );
 
   const markdown = prependFrontmatter(
     frontmatterMarkdown,
-    translatedChunks.map((chunk) => chunk.markdown).join("\n\n")
+    translatedChunks.map((chunk) => chunk.markdown).join("\n\n"),
   );
   const warnings = translatedChunks.flatMap((chunk) =>
-    chunk.metadata.warnings.map((warning) => `Chunk ${chunk.metadata.index} validation failed: ${warning}`)
+    chunk.metadata.warnings.map(
+      (warning) => `Chunk ${chunk.metadata.index} validation failed: ${warning}`,
+    ),
   );
   const usage = aggregateUsage(translatedChunks.map((chunk) => chunk.usage));
 
@@ -67,23 +74,25 @@ export async function translateMarkdown(options: TranslateMarkdownOptions): Prom
     targetLocale: options.targetLocale,
     chunks: translatedChunks.map((chunk) => chunk.metadata),
     warnings,
-    usage
+    usage,
   };
 }
 
 export function createTranslator(
-  defaults: TranslateMarkdownDefaults & Pick<TranslateMarkdownOptions, "targetLocale">
+  defaults: TranslateMarkdownDefaults & Pick<TranslateMarkdownOptions, "targetLocale">,
 ): (options: TranslateMarkdownInput) => Promise<TranslateMarkdownResult>;
 export function createTranslator(
-  defaults: TranslateMarkdownDefaults
+  defaults: TranslateMarkdownDefaults,
 ): (options: TranslateMarkdownInputWithTarget) => Promise<TranslateMarkdownResult>;
 export function createTranslator(defaults: TranslateMarkdownDefaults) {
   return (options: TranslateMarkdownInput): Promise<TranslateMarkdownResult> =>
-    translateMarkdown(requireTargetLocale({
-      ...defaults,
-      ...options,
-      provider: mergeProviderConfig(defaults.provider, options.provider)
-    }));
+    translateMarkdown(
+      requireTargetLocale({
+        ...defaults,
+        ...options,
+        provider: mergeProviderConfig(defaults.provider, options.provider),
+      }),
+    );
 }
 
 function requireTargetLocale(options: TranslateMarkdownInput): TranslateMarkdownOptions {
@@ -93,13 +102,13 @@ function requireTargetLocale(options: TranslateMarkdownInput): TranslateMarkdown
 
   return {
     ...options,
-    targetLocale: options.targetLocale
+    targetLocale: options.targetLocale,
   };
 }
 
 function mergeProviderConfig(
   defaultsProvider: TranslateMarkdownDefaults["provider"],
-  optionsProvider: TranslateMarkdownInput["provider"]
+  optionsProvider: TranslateMarkdownInput["provider"],
 ): TranslateMarkdownOptions["provider"] {
   if (!defaultsProvider && !optionsProvider) {
     return undefined;
@@ -107,7 +116,7 @@ function mergeProviderConfig(
 
   return {
     ...defaultsProvider,
-    ...optionsProvider
+    ...optionsProvider,
   };
 }
 
@@ -115,7 +124,7 @@ async function translateChunksWithConcurrency(
   chunks: MarkdownChunk[],
   concurrency: number,
   options: TranslateMarkdownOptions,
-  providerClient: LlmProvider
+  providerClient: LlmProvider,
 ): Promise<TranslatedChunk[]> {
   const results = new Array<TranslatedChunk>(chunks.length);
   let nextIndex = 0;
@@ -128,7 +137,7 @@ async function translateChunksWithConcurrency(
         nextIndex += 1;
         results[currentIndex] = await translateChunk(chunks[currentIndex], options, providerClient);
       }
-    })
+    }),
   );
 
   return results;
@@ -137,7 +146,7 @@ async function translateChunksWithConcurrency(
 async function translateChunk(
   chunk: MarkdownChunk,
   options: TranslateMarkdownOptions,
-  providerClient: LlmProvider
+  providerClient: LlmProvider,
 ): Promise<TranslatedChunk> {
   const maxAttempts = shouldRetryValidation(options) ? normalizeMaxAttempts(options.maxRetries) : 1;
   let lastMarkdown = "";
@@ -150,7 +159,7 @@ async function translateChunk(
       messages: [
         {
           role: "system",
-          content: createSystemPrompt(options)
+          content: createSystemPrompt(options),
         },
         {
           role: "user",
@@ -160,10 +169,10 @@ async function translateChunk(
             headingPath: chunk.headingPath,
             glossary: options.glossary,
             styleGuide: options.styleGuide,
-            markdown: chunk.markdown
-          })
-        }
-      ]
+            markdown: chunk.markdown,
+          }),
+        },
+      ],
     });
 
     lastMarkdown = cleanModelOutput(response.content);
@@ -183,9 +192,9 @@ async function translateChunk(
       index: chunk.index,
       inputChars: chunk.markdown.length,
       outputChars: lastMarkdown.length,
-      warnings: lastWarnings
+      warnings: lastWarnings,
     },
-    usage: aggregateUsage(usages)
+    usage: aggregateUsage(usages),
   };
 }
 
@@ -206,9 +215,13 @@ function normalizeConcurrency(concurrency: number | undefined): number {
   const normalized = concurrency ?? DEFAULT_CONCURRENCY;
 
   if (!Number.isFinite(normalized) || !Number.isInteger(normalized) || normalized <= 0) {
-    throw new TranslatorError("validation_failed", "concurrency must be a positive finite integer.", {
-      concurrency
-    });
+    throw new TranslatorError(
+      "validation_failed",
+      "concurrency must be a positive finite integer.",
+      {
+        concurrency,
+      },
+    );
   }
 
   return normalized;

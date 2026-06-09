@@ -20,7 +20,10 @@ interface PendingChunk {
 
 const DEFAULT_MAX_CHARS = 6000;
 
-export function chunkMarkdown(markdown: string, options: ChunkMarkdownOptions = {}): MarkdownChunk[] {
+export function chunkMarkdown(
+  markdown: string,
+  options: ChunkMarkdownOptions = {},
+): MarkdownChunk[] {
   const maxChars = normalizeMaxChars(options.maxChars);
   const parsed = parseFrontmatter(markdown);
   const frontmatterMarkdown = parsed.present ? extractFrontmatterMarkdown(markdown) : undefined;
@@ -39,14 +42,16 @@ export function chunkMarkdown(markdown: string, options: ChunkMarkdownOptions = 
       chunks.push(
         createChunk(chunks.length, {
           nodes: [node],
-          headingPath: [...headingPath]
-        })
+          headingPath: [...headingPath],
+        }),
       );
       headingPath = updateHeadingPath(headingPath, node);
       continue;
     }
 
-    const pendingMarkdown = pending ? stringifyNodes([...pending.nodes, node]) : stringifyNodes([node]);
+    const pendingMarkdown = pending
+      ? stringifyNodes([...pending.nodes, node])
+      : stringifyNodes([node]);
 
     if (pending && pendingMarkdown.length > maxChars) {
       chunks.push(createChunk(chunks.length, pending));
@@ -56,7 +61,7 @@ export function chunkMarkdown(markdown: string, options: ChunkMarkdownOptions = 
     if (!pending) {
       pending = {
         nodes: [node],
-        headingPath: [...headingPath]
+        headingPath: [...headingPath],
       };
       continue;
     }
@@ -74,12 +79,12 @@ export function chunkMarkdown(markdown: string, options: ChunkMarkdownOptions = 
         index: 0,
         markdown: "",
         headingPath: [],
-        frontmatterMarkdown
+        frontmatterMarkdown,
       });
     } else {
       chunks[0] = {
         ...chunks[0],
-        frontmatterMarkdown
+        frontmatterMarkdown,
       };
     }
   }
@@ -92,7 +97,7 @@ function normalizeMaxChars(maxChars: number | undefined): number {
 
   if (!Number.isFinite(normalized) || normalized <= 0) {
     throw new TranslatorError("validation_failed", "maxChars must be a positive finite number.", {
-      maxChars
+      maxChars,
     });
   }
 
@@ -107,14 +112,14 @@ function createChunk(index: number, chunk: PendingChunk): MarkdownChunk {
   return {
     index,
     markdown: stringifyNodes(chunk.nodes),
-    headingPath: chunk.headingPath
+    headingPath: chunk.headingPath,
   };
 }
 
 function stringifyNodes(children: RootContent[]): string {
   const tree: Root = {
     type: "root",
-    children
+    children,
   };
 
   return stringifyMarkdownAst(tree);
@@ -127,7 +132,10 @@ function updateHeadingPath(currentPath: string[], heading: Heading): string[] {
 }
 
 function headingText(children: PhrasingContent[]): string {
-  return children.map((child) => phrasingText(child)).join("").trim();
+  return children
+    .map((child) => phrasingText(child))
+    .join("")
+    .trim();
 }
 
 function phrasingText(node: PhrasingContent): string {

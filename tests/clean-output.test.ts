@@ -20,11 +20,11 @@ describe("cleanModelOutput", () => {
       "",
       "```ts",
       "const value = 1;",
-      "```"
+      "```",
     ].join("\n");
 
     expect(cleanModelOutput(output)).toBe(
-      ["# Example", "", "```ts", "const value = 1;", "```"].join("\n")
+      ["# Example", "", "```ts", "const value = 1;", "```"].join("\n"),
     );
   });
 });

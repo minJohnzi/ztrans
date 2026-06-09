@@ -7,7 +7,7 @@ export default defineConfig([
     dts: true,
     sourcemap: true,
     clean: true,
-    target: "node20"
+    target: "node20",
   },
   {
     entry: { cli: "src/cli.ts" },
@@ -16,6 +16,6 @@ export default defineConfig([
     sourcemap: true,
     clean: false,
     target: "node20",
-    banner: { js: "#!/usr/bin/env node" }
-  }
+    banner: { js: "#!/usr/bin/env node" },
+  },
 ]);

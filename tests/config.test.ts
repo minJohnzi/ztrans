@@ -33,14 +33,14 @@ describe("resolveProviderConfig", () => {
         LLM_MODEL: "llm-model",
         DEEPSEEK_API_KEY: "deepseek-key",
         DEEPSEEK_BASE_URL: "https://deepseek.example",
-        DEEPSEEK_MODEL: "deepseek-model"
-      }
+        DEEPSEEK_MODEL: "deepseek-model",
+      },
     });
 
     expect(result).toEqual({
       apiKey: "llm-key",
       baseUrl: "https://config.example",
-      model: "cli-model"
+      model: "cli-model",
     });
   });
 
@@ -54,21 +54,21 @@ describe("resolveProviderConfig", () => {
         LLM_MODEL: "",
         OPENAI_API_KEY: "openai-key",
         OPENAI_BASE_URL: "https://openai.example/v1",
-        OPENAI_MODEL: "openai-model"
-      }
+        OPENAI_MODEL: "openai-model",
+      },
     });
 
     expect(result).toEqual({
       apiKey: "openai-key",
       baseUrl: "https://openai.example/v1",
-      model: "openai-model"
+      model: "openai-model",
     });
   });
 
   it("uses DeepSeek-compatible defaults when no values are provided", () => {
     expect(resolveProviderConfig({ env: {} })).toEqual({
       baseUrl: "https://api.deepseek.com",
-      model: "deepseek-chat"
+      model: "deepseek-chat",
     });
   });
 });
@@ -87,8 +87,8 @@ describe("loadConfigFile", () => {
         "  sourceLocale: zh",
         "  targetLocale: en",
         "quality:",
-        "  maxRetries: 2"
-      ].join("\n")
+        "  maxRetries: 2",
+      ].join("\n"),
     );
 
     await expect(loadConfigFile(filePath)).resolves.toEqual({
@@ -96,26 +96,26 @@ describe("loadConfigFile", () => {
         apiKey: "config-key",
         baseUrl: "https://config.example",
         model: "config-model",
-        temperature: 0.1
+        temperature: 0.1,
       },
       translation: {
         sourceLocale: "zh",
-        targetLocale: "en"
+        targetLocale: "en",
       },
       quality: {
-        maxRetries: 2
-      }
+        maxRetries: 2,
+      },
     });
   });
 
   it("loads JSON config files", async () => {
     const filePath = await writeTempFile(
       "translator.json",
-      JSON.stringify({ provider: { model: "json-model" } })
+      JSON.stringify({ provider: { model: "json-model" } }),
     );
 
     await expect(loadConfigFile(filePath)).resolves.toEqual({
-      provider: { model: "json-model" }
+      provider: { model: "json-model" },
     });
   });
 

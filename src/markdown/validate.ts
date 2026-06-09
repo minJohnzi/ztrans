@@ -34,7 +34,7 @@ export function createStructureSignature(markdown: string): MarkdownStructureSig
 
   return createSignatureFromAst(tree, {
     present: parsed.present,
-    data: normalizeFrontmatterData(parsed.data)
+    data: normalizeFrontmatterData(parsed.data),
   });
 }
 
@@ -52,37 +52,70 @@ export function validateMarkdownStructure(source: string, translated: string): s
 
   const warnings: string[] = [];
 
-  compareFrontmatter(warnings, sourceSignature.value.frontmatter, translatedSignature.value.frontmatter);
-  compareCounts(warnings, "Heading", sourceSignature.value.headings, translatedSignature.value.headings);
-  compareHeadingDepths(warnings, sourceSignature.value.headings, translatedSignature.value.headings);
+  compareFrontmatter(
+    warnings,
+    sourceSignature.value.frontmatter,
+    translatedSignature.value.frontmatter,
+  );
+  compareCounts(
+    warnings,
+    "Heading",
+    sourceSignature.value.headings,
+    translatedSignature.value.headings,
+  );
+  compareHeadingDepths(
+    warnings,
+    sourceSignature.value.headings,
+    translatedSignature.value.headings,
+  );
   compareCounts(
     warnings,
     "Code block",
     sourceSignature.value.codeBlockLanguages,
-    translatedSignature.value.codeBlockLanguages
+    translatedSignature.value.codeBlockLanguages,
   );
   compareIndexedValues(
     warnings,
     "Code block language",
     sourceSignature.value.codeBlockLanguages,
-    translatedSignature.value.codeBlockLanguages
+    translatedSignature.value.codeBlockLanguages,
   );
   compareCounts(
     warnings,
     "Inline code",
     sourceSignature.value.inlineCodeValues,
-    translatedSignature.value.inlineCodeValues
+    translatedSignature.value.inlineCodeValues,
   );
   compareIndexedValues(
     warnings,
     "Inline code",
     sourceSignature.value.inlineCodeValues,
-    translatedSignature.value.inlineCodeValues
+    translatedSignature.value.inlineCodeValues,
   );
-  compareCounts(warnings, "Link", sourceSignature.value.linkUrls, translatedSignature.value.linkUrls);
-  compareIndexedValues(warnings, "Link URL", sourceSignature.value.linkUrls, translatedSignature.value.linkUrls);
-  compareCounts(warnings, "Image", sourceSignature.value.imageUrls, translatedSignature.value.imageUrls);
-  compareIndexedValues(warnings, "Image URL", sourceSignature.value.imageUrls, translatedSignature.value.imageUrls);
+  compareCounts(
+    warnings,
+    "Link",
+    sourceSignature.value.linkUrls,
+    translatedSignature.value.linkUrls,
+  );
+  compareIndexedValues(
+    warnings,
+    "Link URL",
+    sourceSignature.value.linkUrls,
+    translatedSignature.value.linkUrls,
+  );
+  compareCounts(
+    warnings,
+    "Image",
+    sourceSignature.value.imageUrls,
+    translatedSignature.value.imageUrls,
+  );
+  compareIndexedValues(
+    warnings,
+    "Image URL",
+    sourceSignature.value.imageUrls,
+    translatedSignature.value.imageUrls,
+  );
 
   return warnings;
 }
@@ -91,20 +124,23 @@ type SignatureResult =
   | { ok: true; value: MarkdownStructureSignature }
   | { ok: false; warning: string };
 
-function safeCreateStructureSignature(markdown: string, label: "Source" | "Translated"): SignatureResult {
+function safeCreateStructureSignature(
+  markdown: string,
+  label: "Source" | "Translated",
+): SignatureResult {
   try {
     return { ok: true, value: createStructureSignature(markdown) };
   } catch (error) {
     return {
       ok: false,
-      warning: `${label} Markdown parse failed: ${formatParseError(error)}`
+      warning: `${label} Markdown parse failed: ${formatParseError(error)}`,
     };
   }
 }
 
 function createSignatureFromAst(
   tree: Root,
-  frontmatter: FrontmatterSignature
+  frontmatter: FrontmatterSignature,
 ): MarkdownStructureSignature {
   const signature: MarkdownStructureSignature = {
     frontmatter,
@@ -112,7 +148,7 @@ function createSignatureFromAst(
     codeBlockLanguages: [],
     inlineCodeValues: [],
     linkUrls: [],
-    imageUrls: []
+    imageUrls: [],
   };
 
   visit(tree, (node) => {
@@ -186,10 +222,12 @@ function compareCounts<T>(
   warnings: string[],
   label: "Heading" | "Code block" | "Inline code" | "Link" | "Image",
   expected: T[],
-  received: T[]
+  received: T[],
 ): void {
   if (expected.length !== received.length) {
-    warnings.push(`${label} count changed: expected ${expected.length}, received ${received.length}.`);
+    warnings.push(
+      `${label} count changed: expected ${expected.length}, received ${received.length}.`,
+    );
   }
 }
 
@@ -197,7 +235,7 @@ function compareIndexedValues(
   warnings: string[],
   label: "Code block language" | "Inline code" | "Link URL" | "Image URL",
   expected: string[],
-  received: string[]
+  received: string[],
 ): void {
   const comparableLength = Math.min(expected.length, received.length);
 
@@ -205,8 +243,8 @@ function compareIndexedValues(
     if (expected[index] !== received[index]) {
       warnings.push(
         `${label} changed at index ${index}: expected ${formatSignatureValue(
-          expected[index]
-        )}, received ${formatSignatureValue(received[index])}.`
+          expected[index],
+        )}, received ${formatSignatureValue(received[index])}.`,
       );
     }
   }
@@ -215,13 +253,13 @@ function compareIndexedValues(
 function compareFrontmatter(
   warnings: string[],
   expected: FrontmatterSignature,
-  received: FrontmatterSignature
+  received: FrontmatterSignature,
 ): void {
   if (expected.present !== received.present) {
     warnings.push(
       `Frontmatter presence changed: expected ${formatPresence(expected.present)}, received ${formatPresence(
-        received.present
-      )}.`
+        received.present,
+      )}.`,
     );
     return;
   }
@@ -239,8 +277,8 @@ function compareFrontmatter(
     if (!frontmatterValuesEqual(expected.data[key], received.data[key])) {
       warnings.push(
         `Frontmatter value changed for key ${key}: expected ${formatFrontmatterValue(
-          expected.data[key]
-        )}, received ${formatFrontmatterValue(received.data[key])}.`
+          expected.data[key],
+        )}, received ${formatFrontmatterValue(received.data[key])}.`,
       );
     }
   }
@@ -255,14 +293,14 @@ function compareFrontmatter(
 function compareHeadingDepths(
   warnings: string[],
   expected: HeadingSignature[],
-  received: HeadingSignature[]
+  received: HeadingSignature[],
 ): void {
   const comparableLength = Math.min(expected.length, received.length);
 
   for (let index = 0; index < comparableLength; index += 1) {
     if (expected[index].depth !== received[index].depth) {
       warnings.push(
-        `Heading depth changed at index ${index}: expected ${expected[index].depth}, received ${received[index].depth}.`
+        `Heading depth changed at index ${index}: expected ${expected[index].depth}, received ${received[index].depth}.`,
       );
     }
   }

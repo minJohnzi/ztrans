@@ -18,11 +18,11 @@ export function parseFrontmatter(markdown: string): ParsedFrontmatter {
     return {
       content: parsed.content,
       data: parsed.data,
-      present: hasFrontmatter(markdown)
+      present: hasFrontmatter(markdown),
     };
   } catch (error) {
     throw new TranslatorError("markdown_parse_failed", "Failed to parse Markdown frontmatter.", {
-      reason: error instanceof Error ? error.message : String(error)
+      reason: error instanceof Error ? error.message : String(error),
     });
   }
 }
@@ -36,7 +36,7 @@ export function parseMarkdownAst(markdown: string): Root {
     return markdownProcessor().parse(markdown);
   } catch (error) {
     throw new TranslatorError("markdown_parse_failed", "Failed to parse Markdown.", {
-      reason: error instanceof Error ? error.message : String(error)
+      reason: error instanceof Error ? error.message : String(error),
     });
   }
 }
@@ -46,17 +46,14 @@ export function stringifyMarkdownAst(tree: Root): string {
 }
 
 function markdownProcessor() {
-  return unified()
-    .use(remarkParse)
-    .use(remarkGfm)
-    .use(remarkStringify, {
-      bullet: "-",
-      emphasis: "_",
-      fences: true,
-      incrementListMarker: true,
-      listItemIndent: "one",
-      rule: "-",
-      ruleRepetition: 3,
-      strong: "*"
-    });
+  return unified().use(remarkParse).use(remarkGfm).use(remarkStringify, {
+    bullet: "-",
+    emphasis: "_",
+    fences: true,
+    incrementListMarker: true,
+    listItemIndent: "one",
+    rule: "-",
+    ruleRepetition: 3,
+    strong: "*",
+  });
 }

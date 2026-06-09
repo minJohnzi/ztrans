@@ -3,7 +3,11 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { TranslatorError, type TranslateMarkdownOptions, type TranslateMarkdownResult } from "../src/index.js";
+import {
+  TranslatorError,
+  type TranslateMarkdownOptions,
+  type TranslateMarkdownResult,
+} from "../src/index.js";
 import { buildCliProgram } from "../src/cli.js";
 
 let tempDir: string | undefined;
@@ -16,28 +20,41 @@ async function tempFile(name: string, contents: string): Promise<string> {
 }
 
 function tempPath(name: string): string {
-  tempDir ??= join(tmpdir(), `md-translator-cli-${Date.now()}-${Math.random().toString(16).slice(2)}`);
+  tempDir ??= join(
+    tmpdir(),
+    `md-translator-cli-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+  );
 
   return join(tempDir, name);
 }
 
 async function runCli(
   args: string[],
-  translateMarkdownImpl = vi.fn(async (options: TranslateMarkdownOptions): Promise<TranslateMarkdownResult> => ({
-    markdown: options.markdown.replace("Hello", "Bonjour"),
-    sourceLocale: options.sourceLocale,
-    targetLocale: options.targetLocale,
-    chunks: [],
-    warnings: []
-  }))
+  translateMarkdownImpl = vi.fn(
+    async (options: TranslateMarkdownOptions): Promise<TranslateMarkdownResult> => ({
+      markdown: options.markdown.replace("Hello", "Bonjour"),
+      sourceLocale: options.sourceLocale,
+      targetLocale: options.targetLocale,
+      chunks: [],
+      warnings: [],
+    }),
+  ),
 ) {
   let stdout = "";
   let stderr = "";
   const program = buildCliProgram({
     translateMarkdownImpl,
-    stdout: { write: (chunk: string) => { stdout += chunk; } },
-    stderr: { write: (chunk: string) => { stderr += chunk; } },
-    env: {}
+    stdout: {
+      write: (chunk: string) => {
+        stdout += chunk;
+      },
+    },
+    stderr: {
+      write: (chunk: string) => {
+        stderr += chunk;
+      },
+    },
+    env: {},
   });
 
   let exitCode = 0;
@@ -82,7 +99,7 @@ describe("buildCliProgram", () => {
       "--out",
       "--style",
       "--to",
-      "--verbose"
+      "--verbose",
     ]);
   });
 
@@ -105,7 +122,10 @@ describe("buildCliProgram", () => {
   });
 
   it("prints a structure signature for --check --json without an API key", async () => {
-    const input = await tempFile("source.md", "# Hello\n\nUse `code` and [link](https://example.com).");
+    const input = await tempFile(
+      "source.md",
+      "# Hello\n\nUse `code` and [link](https://example.com).",
+    );
     const result = await runCli(["translate", input, "--check", "--json"]);
 
     expect(result.exitCode).toBe(0);
@@ -116,30 +136,37 @@ describe("buildCliProgram", () => {
       signature: {
         headings: [{ depth: 1 }],
         inlineCodeValues: ["code"],
-        linkUrls: ["https://example.com"]
-      }
+        linkUrls: ["https://example.com"],
+      },
     });
     expect(result.stderr).toBe("");
   });
 
   it("uses translation.targetLocale from config when --to is omitted", async () => {
     const input = await tempFile("source.md", "# Hello");
-    const config = await tempFile("translator.yml", ["translation:", "  targetLocale: fr"].join("\n"));
-    const translateMarkdownImpl = vi.fn(async (options: TranslateMarkdownOptions): Promise<TranslateMarkdownResult> => ({
-      markdown: options.markdown.replace("Hello", "Bonjour"),
-      sourceLocale: options.sourceLocale,
-      targetLocale: options.targetLocale,
-      chunks: [],
-      warnings: []
-    }));
+    const config = await tempFile(
+      "translator.yml",
+      ["translation:", "  targetLocale: fr"].join("\n"),
+    );
+    const translateMarkdownImpl = vi.fn(
+      async (options: TranslateMarkdownOptions): Promise<TranslateMarkdownResult> => ({
+        markdown: options.markdown.replace("Hello", "Bonjour"),
+        sourceLocale: options.sourceLocale,
+        targetLocale: options.targetLocale,
+        chunks: [],
+        warnings: [],
+      }),
+    );
 
     const result = await runCli(["translate", input, "--config", config], translateMarkdownImpl);
 
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toBe("# Bonjour\n");
-    expect(translateMarkdownImpl).toHaveBeenCalledWith(expect.objectContaining({
-      targetLocale: "fr"
-    }));
+    expect(translateMarkdownImpl).toHaveBeenCalledWith(
+      expect.objectContaining({
+        targetLocale: "fr",
+      }),
+    );
   });
 
   it("prints a friendly typed error when translate is missing target locale", async () => {
@@ -151,8 +178,8 @@ describe("buildCliProgram", () => {
       ok: false,
       error: {
         code: "unsupported_locale",
-        message: "Target locale is required. Pass --to or set translation.targetLocale in config."
-      }
+        message: "Target locale is required. Pass --to or set translation.targetLocale in config.",
+      },
     });
     expect(result.translateMarkdownImpl).not.toHaveBeenCalled();
   });
@@ -163,7 +190,7 @@ describe("buildCliProgram", () => {
     expect(result.exitCode).toBe(1);
     expect(JSON.parse(result.stdout)).toMatchObject({
       ok: false,
-      error: { code: "input_file_not_found" }
+      error: { code: "input_file_not_found" },
     });
     expect(result.stderr).toBe("");
   });
@@ -192,7 +219,7 @@ describe("buildCliProgram", () => {
       output,
       "--dry-run",
       "--max-chars",
-      "500"
+      "500",
     ]);
 
     expect(result.exitCode).toBe(0);
@@ -204,35 +231,44 @@ describe("buildCliProgram", () => {
 
   it("writes translated Markdown to stdout when --out is omitted", async () => {
     const input = await tempFile("source.md", "# Hello");
-    const translateMarkdownImpl = vi.fn(async (): Promise<TranslateMarkdownResult> => ({
-      markdown: "# Bonjour",
-      targetLocale: "fr",
-      chunks: [],
-      warnings: []
-    }));
+    const translateMarkdownImpl = vi.fn(
+      async (): Promise<TranslateMarkdownResult> => ({
+        markdown: "# Bonjour",
+        targetLocale: "fr",
+        chunks: [],
+        warnings: [],
+      }),
+    );
 
     const result = await runCli(["translate", input, "--to", "fr"], translateMarkdownImpl);
 
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toBe("# Bonjour\n");
     expect(result.stderr).toBe("");
-    expect(translateMarkdownImpl).toHaveBeenCalledWith(expect.objectContaining({
-      markdown: "# Hello",
-      targetLocale: "fr"
-    }));
+    expect(translateMarkdownImpl).toHaveBeenCalledWith(
+      expect.objectContaining({
+        markdown: "# Hello",
+        targetLocale: "fr",
+      }),
+    );
   });
 
   it("writes translated Markdown to a UTF-8 output file with --force", async () => {
     const input = await tempFile("source.md", "# Hello");
     const output = await tempFile("translated.md", "existing");
-    const translateMarkdownImpl = vi.fn(async (): Promise<TranslateMarkdownResult> => ({
-      markdown: "# Bonjour",
-      targetLocale: "fr",
-      chunks: [],
-      warnings: []
-    }));
+    const translateMarkdownImpl = vi.fn(
+      async (): Promise<TranslateMarkdownResult> => ({
+        markdown: "# Bonjour",
+        targetLocale: "fr",
+        chunks: [],
+        warnings: [],
+      }),
+    );
 
-    const result = await runCli(["translate", input, "--to", "fr", "--out", output, "--force"], translateMarkdownImpl);
+    const result = await runCli(
+      ["translate", input, "--to", "fr", "--out", output, "--force"],
+      translateMarkdownImpl,
+    );
 
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain("Wrote");
@@ -242,12 +278,14 @@ describe("buildCliProgram", () => {
 
   it("returns a non-zero exit code after printing output when translation has warnings", async () => {
     const input = await tempFile("source.md", "# Hello");
-    const translateMarkdownImpl = vi.fn(async (): Promise<TranslateMarkdownResult> => ({
-      markdown: "# Bonjour",
-      targetLocale: "fr",
-      chunks: [],
-      warnings: ["Heading count changed."]
-    }));
+    const translateMarkdownImpl = vi.fn(
+      async (): Promise<TranslateMarkdownResult> => ({
+        markdown: "# Bonjour",
+        targetLocale: "fr",
+        chunks: [],
+        warnings: ["Heading count changed."],
+      }),
+    );
 
     const result = await runCli(["translate", input, "--to", "fr"], translateMarkdownImpl);
 
@@ -259,14 +297,19 @@ describe("buildCliProgram", () => {
 
   it("prints exactly one JSON object when translation has warnings", async () => {
     const input = await tempFile("source.md", "# Hello");
-    const translateMarkdownImpl = vi.fn(async (): Promise<TranslateMarkdownResult> => ({
-      markdown: "# Bonjour",
-      targetLocale: "fr",
-      chunks: [],
-      warnings: ["Heading count changed."]
-    }));
+    const translateMarkdownImpl = vi.fn(
+      async (): Promise<TranslateMarkdownResult> => ({
+        markdown: "# Bonjour",
+        targetLocale: "fr",
+        chunks: [],
+        warnings: ["Heading count changed."],
+      }),
+    );
 
-    const result = await runCli(["translate", input, "--to", "fr", "--json"], translateMarkdownImpl);
+    const result = await runCli(
+      ["translate", input, "--to", "fr", "--json"],
+      translateMarkdownImpl,
+    );
     const jsonLines = result.stdout.trim().split(/\r?\n/);
 
     expect(result.exitCode).toBe(1);
@@ -274,7 +317,7 @@ describe("buildCliProgram", () => {
     expect(JSON.parse(jsonLines[0] ?? "")).toMatchObject({
       ok: false,
       result: { markdown: "# Bonjour" },
-      warnings: ["Heading count changed."]
+      warnings: ["Heading count changed."],
     });
     expect(result.stderr).toBe("");
   });
@@ -285,13 +328,13 @@ describe("buildCliProgram", () => {
       throw new TranslatorError("provider_request_failed", "Provider failed.", {
         apiKey: "secret-key",
         authorization: "Bearer secret-key",
-        safe: "visible"
+        safe: "visible",
       });
     });
 
     const result = await runCli(
       ["translate", input, "--to", "fr", "--api-key", "secret-key", "--json"],
-      translateMarkdownImpl
+      translateMarkdownImpl,
     );
 
     expect(result.exitCode).toBe(1);

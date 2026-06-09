@@ -32,12 +32,12 @@ describe("translateMarkdown", () => {
     const provider = new MockProvider([
       {
         content: "# Titre\n",
-        usage: { promptTokens: 10, completionTokens: 4, totalTokens: 14 }
+        usage: { promptTokens: 10, completionTokens: 4, totalTokens: 14 },
       },
       {
         content: "Corps.\n",
-        usage: { promptTokens: 8, completionTokens: 3, totalTokens: 11 }
-      }
+        usage: { promptTokens: 8, completionTokens: 3, totalTokens: 11 },
+      },
     ]);
 
     const result = await translateMarkdown({
@@ -45,7 +45,7 @@ describe("translateMarkdown", () => {
       sourceLocale: "en",
       targetLocale: "fr",
       providerClient: provider,
-      maxChunkChars: 20
+      maxChunkChars: 20,
     });
 
     expect(result.markdown).toBe("# Titre\n\nCorps.");
@@ -53,11 +53,11 @@ describe("translateMarkdown", () => {
       sourceLocale: "en",
       targetLocale: "fr",
       warnings: [],
-      usage: { promptTokens: 18, completionTokens: 7, totalTokens: 25 }
+      usage: { promptTokens: 18, completionTokens: 7, totalTokens: 25 },
     });
     expect(result.chunks).toEqual([
       { index: 0, inputChars: 8, outputChars: 7, warnings: [] },
-      { index: 1, inputChars: 6, outputChars: 6, warnings: [] }
+      { index: 1, inputChars: 6, outputChars: 6, warnings: [] },
     ]);
     expect(provider.requests).toHaveLength(2);
   });
@@ -69,15 +69,15 @@ describe("translateMarkdown", () => {
       markdown: "# Title\n\n[link](https://example.com)",
       targetLocale: "fr",
       providerClient: provider,
-      retryOnValidationFailure: false
+      retryOnValidationFailure: false,
     });
 
     expect(provider.requests).toHaveLength(2);
     expect(result.warnings).toContain(
-      "Chunk 1 validation failed: Link URL changed at index 0: expected https://example.com, received https://changed.example."
+      "Chunk 1 validation failed: Link URL changed at index 0: expected https://example.com, received https://changed.example.",
     );
     expect(result.chunks[1]?.warnings).toContain(
-      "Link URL changed at index 0: expected https://example.com, received https://changed.example."
+      "Link URL changed at index 0: expected https://example.com, received https://changed.example.",
     );
   });
 
@@ -87,7 +87,7 @@ describe("translateMarkdown", () => {
     const result = await translateMarkdown({
       markdown: "# Title\n\nBody.",
       targetLocale: "fr",
-      providerClient: provider
+      providerClient: provider,
     });
 
     expect(result.markdown).toBe("# Titre\n\nCorps.");
@@ -99,7 +99,7 @@ describe("translateMarkdown", () => {
     const result = await translateMarkdown({
       markdown: "---\ntitle: Original\nslug: original\n---\n# Title",
       targetLocale: "fr",
-      providerClient: provider
+      providerClient: provider,
     });
 
     expect(result.markdown).toBe("---\ntitle: Original\nslug: original\n---\n# Titre");
@@ -114,7 +114,7 @@ describe("translateMarkdown", () => {
       sourceLocale: "en",
       targetLocale: "fr",
       providerClient: provider,
-      styleGuide: "Use concise Simplified Chinese."
+      styleGuide: "Use concise Simplified Chinese.",
     } as const;
     const translator = createTranslator(defaults);
     const options = { markdown: "# Title" };
@@ -125,7 +125,7 @@ describe("translateMarkdown", () => {
     expect(result.targetLocale).toBe("fr");
     expect(options).toEqual({ markdown: "# Title" });
     expect(provider.requests[0]?.messages.map((message) => message.content).join("\n")).toContain(
-      "Use concise Simplified Chinese."
+      "Use concise Simplified Chinese.",
     );
   });
 
@@ -139,10 +139,13 @@ describe("translateMarkdown", () => {
       providerClient: provider,
       maxChunkChars: 25,
       glossary: [{ source: "API key", target: "cle API", note: "Keep API uppercase." }],
-      styleGuide: "Prefer developer documentation tone."
+      styleGuide: "Prefer developer documentation tone.",
     });
 
-    const promptText = provider.requests.at(-1)?.messages.map((message) => message.content).join("\n");
+    const promptText = provider.requests
+      .at(-1)
+      ?.messages.map((message) => message.content)
+      .join("\n");
 
     expect(promptText).toContain("Source locale: en");
     expect(promptText).toContain("Target locale: fr");
@@ -154,14 +157,16 @@ describe("translateMarkdown", () => {
   });
 
   it("JSON-encodes Markdown fragments so source code fences cannot break prompt boundaries", async () => {
-    const markdown = ["Before.", "", "```js", "const fence = '```';", "```", "", "After."].join("\n");
+    const markdown = ["Before.", "", "```js", "const fence = '```';", "```", "", "After."].join(
+      "\n",
+    );
     const provider = new MockProvider([markdown]);
 
     await translateMarkdown({
       markdown,
       targetLocale: "fr",
       providerClient: provider,
-      validateStructure: false
+      validateStructure: false,
     });
 
     const promptText = provider.requests[0]?.messages.map((message) => message.content).join("\n");
@@ -189,7 +194,7 @@ describe("translateMarkdown", () => {
         const fragment = JSON.parse(extractMarkdownFragmentJson(prompt)) as string;
 
         return { content: fragment.replace(/Title/g, "Titre").replace(/Body/g, "Corps") };
-      }
+      },
     };
 
     const result = await translateMarkdown({
@@ -198,7 +203,7 @@ describe("translateMarkdown", () => {
       providerClient: provider,
       maxChunkChars: 20,
       concurrency: 2,
-      validateStructure: false
+      validateStructure: false,
     });
 
     expect(maxInFlight).toBeGreaterThan(1);
@@ -212,11 +217,11 @@ describe("translateMarkdown", () => {
         markdown: "# Title",
         targetLocale: "fr",
         providerClient: new MockProvider(["# Titre\n"]),
-        concurrency: 0
-      })
+        concurrency: 0,
+      }),
     ).rejects.toMatchObject({
       code: "validation_failed",
-      message: "concurrency must be a positive finite integer."
+      message: "concurrency must be a positive finite integer.",
     });
 
     await expect(
@@ -224,11 +229,11 @@ describe("translateMarkdown", () => {
         markdown: "# Title",
         targetLocale: "fr",
         providerClient: new MockProvider(["# Titre\n"]),
-        concurrency: 1.5
-      })
+        concurrency: 1.5,
+      }),
     ).rejects.toMatchObject({
       code: "validation_failed",
-      message: "concurrency must be a positive finite integer."
+      message: "concurrency must be a positive finite integer.",
     });
   });
 
@@ -240,9 +245,9 @@ describe("translateMarkdown", () => {
         JSON.stringify({
           choices: [{ message: { content: "# Titre\n" } }],
           usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
-          observed: body
+          observed: body,
         }),
-        { status: 200, headers: { "Content-Type": "application/json" } }
+        { status: 200, headers: { "Content-Type": "application/json" } },
       );
     });
     vi.stubGlobal("fetch", fetchMock);
@@ -252,15 +257,15 @@ describe("translateMarkdown", () => {
       provider: {
         apiKey: "default-key",
         baseUrl: "https://llm.example/v1",
-        model: "default-model"
-      }
+        model: "default-model",
+      },
     });
 
     const result = await translator({
       markdown: "# Title",
       provider: {
-        temperature: 0.7
-      }
+        temperature: 0.7,
+      },
     });
 
     expect(result.markdown).toBe("# Titre");
@@ -273,7 +278,7 @@ describe("translateMarkdown", () => {
     expect((init as RequestInit).headers).toMatchObject({ Authorization: "Bearer default-key" });
     expect(body).toMatchObject({
       model: "default-model",
-      temperature: 0.7
+      temperature: 0.7,
     });
   });
 });

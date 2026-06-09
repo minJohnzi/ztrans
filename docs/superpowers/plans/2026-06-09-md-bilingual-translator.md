@@ -46,6 +46,7 @@
 ### Task 1: Project Scaffold
 
 **Files:**
+
 - Create: `package.json`
 - Create: `tsconfig.json`
 - Create: `tsup.config.ts`
@@ -77,13 +78,7 @@ Create `package.json` with:
     }
   },
   "types": "./dist/index.d.ts",
-  "files": [
-    "dist",
-    "README.md",
-    "LICENSE",
-    ".env.example",
-    "examples"
-  ],
+  "files": ["dist", "README.md", "LICENSE", ".env.example", "examples"],
   "scripts": {
     "build": "tsup",
     "typecheck": "tsc --noEmit",
@@ -150,7 +145,7 @@ export default defineConfig([
     dts: true,
     sourcemap: true,
     clean: true,
-    target: "node20"
+    target: "node20",
   },
   {
     entry: { cli: "src/cli.ts" },
@@ -159,8 +154,8 @@ export default defineConfig([
     sourcemap: true,
     clean: false,
     target: "node20",
-    banner: { js: "#!/usr/bin/env node" }
-  }
+    banner: { js: "#!/usr/bin/env node" },
+  },
 ]);
 ```
 
@@ -172,8 +167,8 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     environment: "node",
-    include: ["tests/**/*.test.ts"]
-  }
+    include: ["tests/**/*.test.ts"],
+  },
 });
 ```
 
@@ -275,6 +270,7 @@ git commit -m "chore: scaffold markdown translator package"
 ### Task 2: Core Types and Errors
 
 **Files:**
+
 - Create: `src/errors.ts`
 - Create: `src/types.ts`
 - Test: `tests/errors.test.ts`
@@ -291,13 +287,13 @@ describe("TranslatorError", () => {
   it("serializes stable error codes without leaking metadata", () => {
     const error = new TranslatorError("missing_api_key", "Missing API key", {
       authorization: "Bearer secret-token",
-      safe: "visible"
+      safe: "visible",
     });
 
     expect(serializeError(error)).toEqual({
       code: "missing_api_key",
       message: "Missing API key",
-      details: { safe: "visible" }
+      details: { safe: "visible" },
     });
   });
 });
@@ -340,7 +336,9 @@ export class TranslatorError extends Error {
   }
 }
 
-export function sanitizeDetails(details?: Record<string, unknown>): Record<string, unknown> | undefined {
+export function sanitizeDetails(
+  details?: Record<string, unknown>,
+): Record<string, unknown> | undefined {
   if (!details) return undefined;
   const sanitized: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(details)) {
@@ -358,13 +356,13 @@ export function serializeError(error: unknown): {
     return {
       code: error.code,
       message: error.message,
-      details: sanitizeDetails(error.details)
+      details: sanitizeDetails(error.details),
     };
   }
 
   return {
     code: "unknown_error",
-    message: error instanceof Error ? error.message : String(error)
+    message: error instanceof Error ? error.message : String(error),
   };
 }
 ```
@@ -451,6 +449,7 @@ git commit -m "feat: add core translator types and errors"
 ### Task 3: Provider Client
 
 **Files:**
+
 - Create: `src/provider/types.ts`
 - Create: `src/provider/openaiCompatibleClient.ts`
 - Test: `tests/provider.test.ts`
@@ -470,20 +469,20 @@ describe("OpenAICompatibleClient", () => {
       ok: true,
       json: async () => ({
         choices: [{ message: { content: "Translated markdown" } }],
-        usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 }
-      })
+        usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
+      }),
     });
 
     const client = new OpenAICompatibleClient({
       apiKey: "secret",
       baseUrl: "https://api.deepseek.com",
       model: "deepseek-chat",
-      fetchImpl: fetchMock
+      fetchImpl: fetchMock,
     });
 
     const result = await client.complete({
       messages: [{ role: "user", content: "Translate this" }],
-      temperature: 0.2
+      temperature: 0.2,
     });
 
     expect(result.content).toBe("Translated markdown");
@@ -492,8 +491,8 @@ describe("OpenAICompatibleClient", () => {
       "https://api.deepseek.com/chat/completions",
       expect.objectContaining({
         method: "POST",
-        headers: expect.objectContaining({ Authorization: "Bearer secret" })
-      })
+        headers: expect.objectContaining({ Authorization: "Bearer secret" }),
+      }),
     );
   });
 
@@ -502,11 +501,11 @@ describe("OpenAICompatibleClient", () => {
       apiKey: "secret",
       baseUrl: "https://api.deepseek.com",
       model: "deepseek-chat",
-      fetchImpl: vi.fn().mockResolvedValue({ ok: true, json: async () => ({ choices: [] }) })
+      fetchImpl: vi.fn().mockResolvedValue({ ok: true, json: async () => ({ choices: [] }) }),
     });
 
     await expect(client.complete({ messages: [] })).rejects.toMatchObject({
-      code: "provider_response_malformed"
+      code: "provider_response_malformed",
     } satisfies Partial<TranslatorError>);
   });
 });
@@ -583,10 +582,12 @@ export class OpenAICompatibleClient implements LlmProvider {
     }
 
     try {
-      this.baseUrl = new URL(options.baseUrl ?? "https://api.deepseek.com").toString().replace(/\/$/, "");
+      this.baseUrl = new URL(options.baseUrl ?? "https://api.deepseek.com")
+        .toString()
+        .replace(/\/$/, "");
     } catch {
       throw new TranslatorError("invalid_base_url", "Invalid LLM provider base URL.", {
-        baseUrl: options.baseUrl
+        baseUrl: options.baseUrl,
       });
     }
 
@@ -600,26 +601,29 @@ export class OpenAICompatibleClient implements LlmProvider {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${this.apiKey}`
+        Authorization: `Bearer ${this.apiKey}`,
       },
       body: JSON.stringify({
         model: this.model,
         messages: request.messages,
-        temperature: request.temperature ?? 0.2
-      })
+        temperature: request.temperature ?? 0.2,
+      }),
     });
 
     if (!response.ok) {
       throw new TranslatorError("provider_request_failed", "Provider request failed.", {
         status: response.status,
-        statusText: response.statusText
+        statusText: response.statusText,
       });
     }
 
     const data = (await response.json()) as ChatCompletionsResponse;
     const content = data.choices?.[0]?.message?.content;
     if (!content) {
-      throw new TranslatorError("provider_response_malformed", "Provider response did not include message content.");
+      throw new TranslatorError(
+        "provider_response_malformed",
+        "Provider response did not include message content.",
+      );
     }
 
     return {
@@ -628,9 +632,9 @@ export class OpenAICompatibleClient implements LlmProvider {
         ? {
             promptTokens: data.usage.prompt_tokens,
             completionTokens: data.usage.completion_tokens,
-            totalTokens: data.usage.total_tokens
+            totalTokens: data.usage.total_tokens,
           }
-        : undefined
+        : undefined,
     };
   }
 }
@@ -660,6 +664,7 @@ git commit -m "feat: add openai compatible provider client"
 ### Task 4: Config and Glossary Loading
 
 **Files:**
+
 - Create: `src/config/env.ts`
 - Create: `src/config/loadConfig.ts`
 - Create: `src/translate/glossary.ts`
@@ -685,14 +690,14 @@ describe("resolveProviderConfig", () => {
         LLM_MODEL: "llm-model",
         DEEPSEEK_API_KEY: "deepseek-key",
         DEEPSEEK_BASE_URL: "https://deepseek.example",
-        DEEPSEEK_MODEL: "deepseek-model"
-      }
+        DEEPSEEK_MODEL: "deepseek-model",
+      },
     });
 
     expect(result).toEqual({
       apiKey: "llm-key",
       baseUrl: "https://config.example",
-      model: "cli-model"
+      model: "cli-model",
     });
   });
 });
@@ -711,8 +716,8 @@ describe("renderGlossaryForPrompt", () => {
     expect(
       renderGlossaryForPrompt([
         { source: "TwoRiver", target: "TwoRiver", note: "Project name, never translate." },
-        { source: "发布控制台", target: "publishing console" }
-      ])
+        { source: "发布控制台", target: "publishing console" },
+      ]),
     ).toContain("TwoRiver => TwoRiver (Project name, never translate.)");
   });
 });
@@ -742,16 +747,16 @@ export function resolveProviderConfig(input: ResolveProviderConfigInput = {}): P
   const providerEnv: ProviderConfig = {
     apiKey: env.DEEPSEEK_API_KEY ?? env.OPENAI_API_KEY,
     baseUrl: env.DEEPSEEK_BASE_URL ?? env.OPENAI_BASE_URL,
-    model: env.DEEPSEEK_MODEL ?? env.OPENAI_MODEL
+    model: env.DEEPSEEK_MODEL ?? env.OPENAI_MODEL,
   };
   const llmEnv: ProviderConfig = {
     apiKey: env.LLM_API_KEY,
     baseUrl: env.LLM_BASE_URL,
-    model: env.LLM_MODEL
+    model: env.LLM_MODEL,
   };
   const defaults: ProviderConfig = {
     baseUrl: "https://api.deepseek.com",
-    model: "deepseek-chat"
+    model: "deepseek-chat",
   };
 
   return compactProviderConfig({
@@ -759,13 +764,13 @@ export function resolveProviderConfig(input: ResolveProviderConfigInput = {}): P
     ...providerEnv,
     ...llmEnv,
     ...input.config,
-    ...input.cli
+    ...input.cli,
   });
 }
 
 function compactProviderConfig(config: ProviderConfig): ProviderConfig {
   return Object.fromEntries(
-    Object.entries(config).filter(([, value]) => value !== undefined && value !== "")
+    Object.entries(config).filter(([, value]) => value !== undefined && value !== ""),
   ) as ProviderConfig;
 }
 ```
@@ -807,7 +812,7 @@ export async function loadConfigFile(path?: string): Promise<TranslatorConfigFil
     return parseStructuredFile<TranslatorConfigFile>(raw, path);
   } catch (error) {
     throw new TranslatorError("config_file_invalid", `Could not load config file: ${path}`, {
-      cause: error instanceof Error ? error.message : String(error)
+      cause: error instanceof Error ? error.message : String(error),
     });
   }
 }
@@ -868,6 +873,7 @@ git commit -m "feat: add config and glossary loading"
 ### Task 5: Markdown Parse, Clean, and Validation
 
 **Files:**
+
 - Create: `src/markdown/parse.ts`
 - Create: `src/markdown/cleanModelOutput.ts`
 - Create: `src/markdown/validate.ts`
@@ -878,23 +884,25 @@ git commit -m "feat: add config and glossary loading"
 
 Create `tests/clean-output.test.ts`:
 
-```ts
+````ts
 import { describe, expect, it } from "vitest";
 import { cleanModelOutput } from "../src/markdown/cleanModelOutput.js";
 
 describe("cleanModelOutput", () => {
   it("removes common markdown wrappers", () => {
-    const output = cleanModelOutput("Here is the translation:\n\n```markdown\n# Title\n\nBody\n```");
+    const output = cleanModelOutput(
+      "Here is the translation:\n\n```markdown\n# Title\n\nBody\n```",
+    );
     expect(output).toBe("# Title\n\nBody");
   });
 });
-```
+````
 
 - [ ] **Step 2: Write failing validation tests**
 
 Create `tests/markdown-validate.test.ts`:
 
-```ts
+````ts
 import { describe, expect, it } from "vitest";
 import { createStructureSignature, validateMarkdownStructure } from "../src/markdown/validate.js";
 
@@ -911,7 +919,7 @@ describe("markdown validation", () => {
     expect(signature.codeBlocks).toEqual([{ lang: "ts" }]);
   });
 });
-```
+````
 
 - [ ] **Step 3: Run tests to verify they fail**
 
@@ -935,9 +943,13 @@ export function parseFrontmatter(markdown: string) {
   try {
     return matter(markdown);
   } catch (error) {
-    throw new TranslatorError("markdown_parse_failed", "Markdown frontmatter could not be parsed.", {
-      cause: error instanceof Error ? error.message : String(error)
-    });
+    throw new TranslatorError(
+      "markdown_parse_failed",
+      "Markdown frontmatter could not be parsed.",
+      {
+        cause: error instanceof Error ? error.message : String(error),
+      },
+    );
   }
 }
 
@@ -945,7 +957,7 @@ export function markdownProcessor() {
   return unified().use(remarkParse).use(remarkGfm).use(remarkStringify, {
     fences: true,
     bullet: "-",
-    listItemIndent: "one"
+    listItemIndent: "one",
   });
 }
 
@@ -954,7 +966,7 @@ export function parseMarkdownAst(markdown: string) {
     return markdownProcessor().parse(markdown);
   } catch (error) {
     throw new TranslatorError("markdown_parse_failed", "Markdown could not be parsed.", {
-      cause: error instanceof Error ? error.message : String(error)
+      cause: error instanceof Error ? error.message : String(error),
     });
   }
 }
@@ -966,7 +978,7 @@ export function stringifyMarkdownAst(tree: unknown): string {
 
 Create `src/markdown/cleanModelOutput.ts`:
 
-```ts
+````ts
 export function cleanModelOutput(output: string): string {
   let cleaned = output.trim();
   cleaned = cleaned.replace(/^Here is the translation:\s*/i, "").trim();
@@ -974,7 +986,7 @@ export function cleanModelOutput(output: string): string {
   if (fenced) cleaned = fenced[1].trim();
   return cleaned;
 }
-```
+````
 
 - [ ] **Step 5: Implement structure validation**
 
@@ -1005,7 +1017,7 @@ export function createStructureSignature(markdown: string): StructureSignature {
     headings: [],
     codeBlocks: [],
     links: [],
-    images: []
+    images: [],
   };
 
   visit(tree, (node) => {
@@ -1035,18 +1047,32 @@ export function validateMarkdownStructure(source: string, translated: string): s
     sourceSignature = createStructureSignature(source);
     translatedSignature = createStructureSignature(translated);
   } catch (error) {
-    return [`Markdown parse failed during validation: ${error instanceof Error ? error.message : String(error)}.`];
+    return [
+      `Markdown parse failed during validation: ${error instanceof Error ? error.message : String(error)}.`,
+    ];
   }
 
-  compareCount(warnings, "Heading", sourceSignature.headings.length, translatedSignature.headings.length);
-  compareCount(warnings, "Code block", sourceSignature.codeBlocks.length, translatedSignature.codeBlocks.length);
+  compareCount(
+    warnings,
+    "Heading",
+    sourceSignature.headings.length,
+    translatedSignature.headings.length,
+  );
+  compareCount(
+    warnings,
+    "Code block",
+    sourceSignature.codeBlocks.length,
+    translatedSignature.codeBlocks.length,
+  );
   compareCount(warnings, "Link", sourceSignature.links.length, translatedSignature.links.length);
   compareCount(warnings, "Image", sourceSignature.images.length, translatedSignature.images.length);
 
   sourceSignature.codeBlocks.forEach((block, index) => {
     const translatedBlock = translatedSignature.codeBlocks[index];
     if (translatedBlock && block.lang !== translatedBlock.lang) {
-      warnings.push(`Code block language changed at index ${index}: expected ${block.lang ?? ""}, received ${translatedBlock.lang ?? ""}.`);
+      warnings.push(
+        `Code block language changed at index ${index}: expected ${block.lang ?? ""}, received ${translatedBlock.lang ?? ""}.`,
+      );
     }
   });
 
@@ -1087,6 +1113,7 @@ git commit -m "feat: add markdown parsing and structure validation"
 ### Task 6: AST-Based Chunking
 
 **Files:**
+
 - Create: `src/markdown/chunk.ts`
 - Test: `tests/chunk.test.ts`
 
@@ -1094,14 +1121,14 @@ git commit -m "feat: add markdown parsing and structure validation"
 
 Create `tests/chunk.test.ts`:
 
-```ts
+````ts
 import { describe, expect, it } from "vitest";
 import { chunkMarkdown } from "../src/markdown/chunk.js";
 
 describe("chunkMarkdown", () => {
   it("keeps fenced code blocks inside a single chunk", () => {
     const chunks = chunkMarkdown("# A\n\nText\n\n```ts\nconst a = 1;\n```\n\n## B\n\nMore", {
-      maxChars: 30
+      maxChars: 30,
     });
 
     expect(chunks.some((chunk) => chunk.markdown.includes("```ts\nconst a = 1;\n```"))).toBe(true);
@@ -1112,7 +1139,7 @@ describe("chunkMarkdown", () => {
     expect(chunks.at(-1)?.headingPath).toEqual(["Article", "Section"]);
   });
 });
-```
+````
 
 - [ ] **Step 2: Run test to verify it fails**
 
@@ -1161,7 +1188,7 @@ export function chunkMarkdown(markdown: string, options: ChunkOptions = {}): Mar
       chunks.push({
         index: chunks.length,
         markdown: bufferMarkdown.trimEnd(),
-        headingPath: bufferHeadingPath
+        headingPath: bufferHeadingPath,
       });
       buffer = [];
     }
@@ -1176,7 +1203,7 @@ export function chunkMarkdown(markdown: string, options: ChunkOptions = {}): Mar
     chunks.push({
       index: chunks.length,
       markdown: stringifyNodes(buffer).trimEnd(),
-      headingPath: bufferHeadingPath
+      headingPath: bufferHeadingPath,
     });
   }
 
@@ -1223,6 +1250,7 @@ git commit -m "feat: add ast based markdown chunking"
 ### Task 7: Translation Orchestration
 
 **Files:**
+
 - Create: `src/translate/prompts.ts`
 - Create: `src/translate/translateMarkdown.ts`
 - Create: `src/index.ts`
@@ -1232,7 +1260,7 @@ git commit -m "feat: add ast based markdown chunking"
 
 Create `tests/translate-markdown.test.ts`:
 
-```ts
+````ts
 import { describe, expect, it } from "vitest";
 import { translateMarkdown } from "../src/index.js";
 import type { LlmProvider } from "../src/provider/types.js";
@@ -1243,16 +1271,16 @@ describe("translateMarkdown", () => {
       async complete() {
         return {
           content: "# Translated\n\nUse `pnpm test`.\n\n```ts\nconst ok = true;\n```",
-          usage: { totalTokens: 12 }
+          usage: { totalTokens: 12 },
         };
-      }
+      },
     };
 
     const result = await translateMarkdown({
       markdown: "# 原文\n\n使用 `pnpm test`。\n\n```ts\nconst ok = true;\n```",
       sourceLocale: "zh",
       targetLocale: "en",
-      providerClient
+      providerClient,
     });
 
     expect(result.markdown).toContain("# Translated");
@@ -1264,20 +1292,20 @@ describe("translateMarkdown", () => {
     const providerClient: LlmProvider = {
       async complete() {
         return { content: "# Only one heading\n\nText" };
-      }
+      },
     };
 
     const result = await translateMarkdown({
       markdown: "# A\n\n## B\n\nText",
       targetLocale: "en",
       providerClient,
-      maxRetries: 0
+      maxRetries: 0,
     });
 
     expect(result.warnings).toContain("Heading count changed: expected 2, received 1.");
   });
 });
-```
+````
 
 - [ ] **Step 2: Run test to verify it fails**
 
@@ -1299,7 +1327,7 @@ export function buildSystemPrompt(): string {
     "Translate the article content without summarizing, expanding, deleting, or explaining it.",
     "Preserve Markdown structure, heading hierarchy, code blocks, inline code, links, image URLs, HTML tags, commands, paths, variables, package names, and API names.",
     "Only output the translated Markdown fragment.",
-    "Follow the glossary exactly. If a technical term is uncertain, keep the original term."
+    "Follow the glossary exactly. If a technical term is uncertain, keep the original term.",
   ].join("\n");
 }
 
@@ -1323,7 +1351,7 @@ export function buildChunkPrompt(input: {
     input.styleGuide?.trim() || "Use a clear, natural technical blog style.",
     "",
     "Markdown fragment:",
-    input.markdown
+    input.markdown,
   ].join("\n");
 }
 ```
@@ -1341,15 +1369,22 @@ import { cleanModelOutput } from "../markdown/cleanModelOutput.js";
 import { validateMarkdownStructure } from "../markdown/validate.js";
 import { buildChunkPrompt, buildSystemPrompt } from "./prompts.js";
 
-export function createTranslator(defaults: Omit<TranslateMarkdownOptions, "markdown" | "targetLocale">) {
+export function createTranslator(
+  defaults: Omit<TranslateMarkdownOptions, "markdown" | "targetLocale">,
+) {
   return {
-    translateMarkdown(options: Pick<TranslateMarkdownOptions, "markdown" | "targetLocale"> & Partial<TranslateMarkdownOptions>) {
+    translateMarkdown(
+      options: Pick<TranslateMarkdownOptions, "markdown" | "targetLocale"> &
+        Partial<TranslateMarkdownOptions>,
+    ) {
       return translateMarkdown({ ...defaults, ...options });
-    }
+    },
   };
 }
 
-export async function translateMarkdown(options: TranslateMarkdownOptions): Promise<TranslateMarkdownResult> {
+export async function translateMarkdown(
+  options: TranslateMarkdownOptions,
+): Promise<TranslateMarkdownResult> {
   const providerClient = getProviderClient(options);
   const chunks = chunkMarkdown(options.markdown, { maxChars: options.maxChunkChars });
   const translatedChunks: string[] = [];
@@ -1360,7 +1395,7 @@ export async function translateMarkdown(options: TranslateMarkdownOptions): Prom
   for (const chunk of chunks) {
     const translated = await translateChunkWithRetry(providerClient, chunk.markdown, {
       ...options,
-      headingPath: chunk.headingPath
+      headingPath: chunk.headingPath,
     });
 
     translatedChunks.push(translated.markdown);
@@ -1368,7 +1403,7 @@ export async function translateMarkdown(options: TranslateMarkdownOptions): Prom
       index: chunk.index,
       inputChars: chunk.markdown.length,
       outputChars: translated.markdown.length,
-      warnings: translated.warnings
+      warnings: translated.warnings,
     });
     warnings.push(...translated.warnings);
     addUsage(usage, translated.usage);
@@ -1380,14 +1415,14 @@ export async function translateMarkdown(options: TranslateMarkdownOptions): Prom
     targetLocale: options.targetLocale,
     chunks: chunkResults,
     warnings,
-    usage: Object.keys(usage).length > 0 ? usage : undefined
+    usage: Object.keys(usage).length > 0 ? usage : undefined,
   };
 }
 
 async function translateChunkWithRetry(
   providerClient: LlmProvider,
   markdown: string,
-  options: TranslateMarkdownOptions & { headingPath?: string[] }
+  options: TranslateMarkdownOptions & { headingPath?: string[] },
 ): Promise<{ markdown: string; warnings: string[]; usage?: TokenUsage }> {
   const maxRetries = options.maxRetries ?? (options.retryOnValidationFailure === false ? 0 : 1);
   let attempt = 0;
@@ -1408,14 +1443,15 @@ async function translateChunkWithRetry(
             targetLocale: options.targetLocale,
             headingPath: options.headingPath,
             glossary: options.glossary,
-            styleGuide: options.styleGuide
-          })
-        }
-      ]
+            styleGuide: options.styleGuide,
+          }),
+        },
+      ],
     });
 
     lastMarkdown = cleanModelOutput(response.content);
-    lastWarnings = options.validateStructure === false ? [] : validateMarkdownStructure(markdown, lastMarkdown);
+    lastWarnings =
+      options.validateStructure === false ? [] : validateMarkdownStructure(markdown, lastMarkdown);
     lastUsage = response.usage;
     if (lastWarnings.length === 0) break;
     attempt += 1;
@@ -1454,10 +1490,15 @@ export type {
   ProviderConfig,
   TokenUsage,
   TranslateMarkdownOptions,
-  TranslateMarkdownResult
+  TranslateMarkdownResult,
 } from "./types.js";
 export { OpenAICompatibleClient } from "./provider/openaiCompatibleClient.js";
-export type { LlmProvider, ChatMessage, CompletionRequest, CompletionResponse } from "./provider/types.js";
+export type {
+  LlmProvider,
+  ChatMessage,
+  CompletionRequest,
+  CompletionResponse,
+} from "./provider/types.js";
 export { createTranslator, translateMarkdown } from "./translate/translateMarkdown.js";
 ```
 
@@ -1481,6 +1522,7 @@ git commit -m "feat: add markdown translation orchestration"
 ### Task 8: TwoRiver Adapter
 
 **Files:**
+
 - Create: `src/adapters/tworiver.ts`
 - Modify: `src/index.ts`
 - Test: `tests/tworiver.test.ts`
@@ -1502,7 +1544,7 @@ describe("translatePostTranslation", () => {
         if (content.includes("标题")) return { content: "Title" };
         if (content.includes("摘要")) return { content: "Summary" };
         return { content: "# Body" };
-      }
+      },
     };
 
     const result = await translatePostTranslation({
@@ -1512,10 +1554,10 @@ describe("translatePostTranslation", () => {
         summary: "摘要",
         contentMarkdown: "# 正文",
         seoTitle: null,
-        seoDescription: null
+        seoDescription: null,
       },
       targetLocale: "en",
-      providerClient
+      providerClient,
     });
 
     expect(result).toEqual({
@@ -1524,7 +1566,7 @@ describe("translatePostTranslation", () => {
       summary: "Summary",
       contentMarkdown: "# Body",
       seoTitle: null,
-      seoDescription: null
+      seoDescription: null,
     });
   });
 });
@@ -1562,14 +1604,14 @@ export interface TranslatePostTranslationOptions {
 }
 
 export async function translatePostTranslation(
-  options: TranslatePostTranslationOptions
+  options: TranslatePostTranslationOptions,
 ): Promise<TwoRiverPostTranslation> {
   const common = {
     sourceLocale: options.source.locale,
     targetLocale: options.targetLocale,
     provider: options.provider,
     providerClient: options.providerClient,
-    validateStructure: false
+    validateStructure: false,
   };
 
   const [title, summary, content] = await Promise.all([
@@ -1578,8 +1620,8 @@ export async function translatePostTranslation(
     translateMarkdown({
       ...common,
       markdown: options.source.contentMarkdown,
-      validateStructure: true
-    })
+      validateStructure: true,
+    }),
   ]);
 
   return {
@@ -1588,7 +1630,7 @@ export async function translatePostTranslation(
     summary: summary.markdown,
     contentMarkdown: content.markdown,
     seoTitle: options.source.seoTitle ? title.markdown : null,
-    seoDescription: options.source.seoDescription ? summary.markdown : null
+    seoDescription: options.source.seoDescription ? summary.markdown : null,
   };
 }
 ```
@@ -1596,12 +1638,10 @@ export async function translatePostTranslation(
 Modify `src/index.ts` to add:
 
 ```ts
-export {
-  translatePostTranslation
-} from "./adapters/tworiver.js";
+export { translatePostTranslation } from "./adapters/tworiver.js";
 export type {
   TranslatePostTranslationOptions,
-  TwoRiverPostTranslation
+  TwoRiverPostTranslation,
 } from "./adapters/tworiver.js";
 ```
 
@@ -1625,6 +1665,7 @@ git commit -m "feat: add tworiver translation adapter"
 ### Task 9: CLI
 
 **Files:**
+
 - Create: `src/cli.ts`
 - Test: `tests/cli.test.ts`
 
@@ -1640,9 +1681,12 @@ describe("CLI", () => {
   it("parses translate options", () => {
     const program = buildCliProgram();
     program.exitOverride();
-    program.parse(["md-translator", "translate", "input.md", "--from", "zh", "--to", "en", "--json"], {
-      from: "user"
-    });
+    program.parse(
+      ["md-translator", "translate", "input.md", "--from", "zh", "--to", "en", "--json"],
+      {
+        from: "user",
+      },
+    );
 
     const command = program.commands.find((item) => item.name() === "translate");
     expect(command?.opts()).toMatchObject({ from: "zh", to: "en", json: true });
@@ -1673,7 +1717,9 @@ import { translateMarkdown } from "./translate/translateMarkdown.js";
 
 export function buildCliProgram(): Command {
   const program = new Command();
-  program.name("md-translator").description("Translate technical Markdown with an OpenAI-compatible LLM API.");
+  program
+    .name("md-translator")
+    .description("Translate technical Markdown with an OpenAI-compatible LLM API.");
 
   program
     .command("translate")
@@ -1696,21 +1742,24 @@ export function buildCliProgram(): Command {
     .option("--verbose", "Print verbose logs")
     .action(runTranslateCommand);
 
-  program.command("init").description("Print an example config file").action(() => {
-    process.stdout.write(
-      [
-        "provider:",
-        "  baseUrl: https://api.deepseek.com",
-        "  model: deepseek-chat",
-        "translation:",
-        "  defaultSourceLocale: zh",
-        "  defaultTargetLocale: en",
-        "  temperature: 0.2",
-        "  maxChunkChars: 6000",
-        "  concurrency: 1"
-      ].join("\n") + "\n"
-    );
-  });
+  program
+    .command("init")
+    .description("Print an example config file")
+    .action(() => {
+      process.stdout.write(
+        [
+          "provider:",
+          "  baseUrl: https://api.deepseek.com",
+          "  model: deepseek-chat",
+          "translation:",
+          "  defaultSourceLocale: zh",
+          "  defaultTargetLocale: en",
+          "  temperature: 0.2",
+          "  maxChunkChars: 6000",
+          "  concurrency: 1",
+        ].join("\n") + "\n",
+      );
+    });
 
   return program;
 }
@@ -1729,7 +1778,11 @@ async function runTranslateCommand(input: string, options: Record<string, unknow
     }
 
     if (options.dryRun) {
-      writeOutput(options, { ok: true, input, targetLocale: options.to }, `Would translate ${input} to ${options.to}\n`);
+      writeOutput(
+        options,
+        { ok: true, input, targetLocale: options.to },
+        `Would translate ${input} to ${options.to}\n`,
+      );
       return;
     }
 
@@ -1737,30 +1790,40 @@ async function runTranslateCommand(input: string, options: Record<string, unknow
       throw new TranslatorError("output_file_exists", `Output file already exists: ${options.out}`);
     }
 
-    const config = await loadConfigFile(typeof options.config === "string" ? options.config : undefined);
-    const glossary = await loadGlossaryFile(typeof options.glossary === "string" ? options.glossary : undefined);
-    const styleGuide = typeof options.style === "string" ? await readFile(options.style, "utf8") : undefined;
+    const config = await loadConfigFile(
+      typeof options.config === "string" ? options.config : undefined,
+    );
+    const glossary = await loadGlossaryFile(
+      typeof options.glossary === "string" ? options.glossary : undefined,
+    );
+    const styleGuide =
+      typeof options.style === "string" ? await readFile(options.style, "utf8") : undefined;
     const provider = resolveProviderConfig({
       cli: {
         apiKey: typeof options.apiKey === "string" ? options.apiKey : undefined,
         baseUrl: typeof options.baseUrl === "string" ? options.baseUrl : undefined,
-        model: typeof options.model === "string" ? options.model : undefined
+        model: typeof options.model === "string" ? options.model : undefined,
       },
-      config: config.provider
+      config: config.provider,
     });
 
     const result = await translateMarkdown({
       markdown,
-      sourceLocale: typeof options.from === "string" ? options.from : config.translation?.sourceLocale,
+      sourceLocale:
+        typeof options.from === "string" ? options.from : config.translation?.sourceLocale,
       targetLocale: String(options.to ?? config.translation?.targetLocale),
       provider,
       glossary,
       styleGuide,
-      maxChunkChars: typeof options.maxChars === "number" ? options.maxChars : config.translation?.maxChunkChars,
-      concurrency: typeof options.concurrency === "number" ? options.concurrency : config.translation?.concurrency,
+      maxChunkChars:
+        typeof options.maxChars === "number" ? options.maxChars : config.translation?.maxChunkChars,
+      concurrency:
+        typeof options.concurrency === "number"
+          ? options.concurrency
+          : config.translation?.concurrency,
       retryOnValidationFailure: config.quality?.retryOnValidationFailure,
       maxRetries: config.quality?.maxRetries,
-      validateStructure: config.quality?.validateStructure
+      validateStructure: config.quality?.validateStructure,
     });
 
     if (options.out) {
@@ -1783,7 +1846,11 @@ async function runTranslateCommand(input: string, options: Record<string, unknow
   }
 }
 
-function writeOutput(options: Record<string, unknown>, jsonValue: unknown, textValue: string): void {
+function writeOutput(
+  options: Record<string, unknown>,
+  jsonValue: unknown,
+  textValue: string,
+): void {
   if (options.json) {
     process.stdout.write(JSON.stringify(jsonValue, null, 2) + "\n");
   } else {
@@ -1816,6 +1883,7 @@ git commit -m "feat: add markdown translator cli"
 ### Task 10: Documentation and Examples
 
 **Files:**
+
 - Create: `README.md`
 - Create: `examples/basic/input.md`
 - Create: `examples/basic/glossary.yml`
@@ -1825,7 +1893,7 @@ git commit -m "feat: add markdown translator cli"
 
 Create `examples/basic/input.md`:
 
-```md
+````md
 ---
 title: 发布控制台设计
 slug: publishing-console-design
@@ -1841,9 +1909,11 @@ tags:
 ```ts
 const framework = "fastify";
 ```
+````
 
 Read the [Fastify docs](https://fastify.dev/).
-```
+
+````
 
 Create `examples/basic/glossary.yml`:
 
@@ -1858,7 +1928,7 @@ terms:
     target: SQLite
   - source: 发布控制台
     target: publishing console
-```
+````
 
 - [ ] **Step 2: Add TwoRiver example**
 
@@ -1874,14 +1944,14 @@ const result = await translatePostTranslation({
     summary: "如何设计一个轻量的发布控制台。",
     contentMarkdown: "# 发布控制台设计\n\n使用 `Fastify` 构建 API。",
     seoTitle: null,
-    seoDescription: null
+    seoDescription: null,
   },
   targetLocale: "en",
   provider: {
     apiKey: process.env.LLM_API_KEY,
     baseUrl: process.env.LLM_BASE_URL,
-    model: process.env.LLM_MODEL
-  }
+    model: process.env.LLM_MODEL,
+  },
 });
 
 console.log(result);
@@ -1891,7 +1961,7 @@ console.log(result);
 
 Create `README.md` with sections:
 
-```md
+````md
 # md-bilingual-translator
 
 `md-bilingual-translator` is a TypeScript library and `md-translator` CLI for translating Chinese/English technical Markdown through OpenAI-compatible chat completion APIs.
@@ -1901,6 +1971,7 @@ Create `README.md` with sections:
 ```bash
 pnpm add md-bilingual-translator
 ```
+````
 
 ## CLI
 
@@ -1941,8 +2012,8 @@ const result = await translateMarkdown({
   provider: {
     apiKey: process.env.LLM_API_KEY,
     baseUrl: process.env.LLM_BASE_URL,
-    model: process.env.LLM_MODEL
-  }
+    model: process.env.LLM_MODEL,
+  },
 });
 ```
 
@@ -1966,7 +2037,8 @@ Do not commit API keys. The CLI and provider avoid printing API keys or full Aut
 ## Testing
 
 Tests mock the provider and do not call external LLM APIs.
-```
+
+````
 
 - [ ] **Step 4: Commit**
 
@@ -1975,13 +2047,14 @@ Run:
 ```bash
 git add README.md examples
 git commit -m "docs: add usage documentation and examples"
-```
+````
 
 ---
 
 ### Task 11: Final Verification and Polish
 
 **Files:**
+
 - Verify: `src/**/*.ts`
 - Verify: `tests/**/*.test.ts`
 - Verify: `README.md`

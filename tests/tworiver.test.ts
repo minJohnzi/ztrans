@@ -6,9 +6,17 @@ class PromptAwareProvider implements LlmProvider {
   readonly requests: CompletionRequest[] = [];
   private readonly responsesByFragment = new Map<string, Array<string | CompletionResponse>>();
 
-  constructor(responsesByFragment: Record<string, Array<string | CompletionResponse> | string | CompletionResponse>) {
+  constructor(
+    responsesByFragment: Record<
+      string,
+      Array<string | CompletionResponse> | string | CompletionResponse
+    >,
+  ) {
     for (const [fragment, responses] of Object.entries(responsesByFragment)) {
-      this.responsesByFragment.set(fragment, Array.isArray(responses) ? [...responses] : [responses]);
+      this.responsesByFragment.set(
+        fragment,
+        Array.isArray(responses) ? [...responses] : [responses],
+      );
     }
   }
 
@@ -42,7 +50,7 @@ describe("translatePostTranslation", () => {
       "Translated summary": "Resume traduit",
       "Body.": "Corps traduit.",
       "SEO title": "Titre SEO traduit",
-      "SEO description": "Description SEO traduite"
+      "SEO description": "Description SEO traduite",
     });
 
     const result = await translatePostTranslation({
@@ -52,10 +60,10 @@ describe("translatePostTranslation", () => {
         summary: "Translated summary",
         contentMarkdown: "Body.",
         seoTitle: "SEO title",
-        seoDescription: "SEO description"
+        seoDescription: "SEO description",
       },
       targetLocale: "fr",
-      providerClient: provider
+      providerClient: provider,
     });
 
     expect(result).toEqual({
@@ -66,7 +74,7 @@ describe("translatePostTranslation", () => {
       seoTitle: "Titre SEO traduit",
       seoDescription: "Description SEO traduite",
       warnings: [],
-      chunks: [expect.objectContaining({ index: 0, warnings: [] })]
+      chunks: [expect.objectContaining({ index: 0, warnings: [] })],
     });
     expect(provider.requests).toHaveLength(5);
   });
@@ -75,7 +83,7 @@ describe("translatePostTranslation", () => {
     const provider = new PromptAwareProvider({
       Title: "Target title",
       Summary: "Target summary",
-      "Body.": "Target body."
+      "Body.": "Target body.",
     });
 
     await translatePostTranslation({
@@ -83,10 +91,10 @@ describe("translatePostTranslation", () => {
         locale: "en-US",
         title: "Title",
         summary: "Summary",
-        contentMarkdown: "Body."
+        contentMarkdown: "Body.",
       },
       targetLocale: "zh-Hant",
-      providerClient: provider
+      providerClient: provider,
     });
 
     expect(provider.requests).toHaveLength(3);
@@ -101,7 +109,7 @@ describe("translatePostTranslation", () => {
     const provider = new PromptAwareProvider({
       Title: "Titre",
       Summary: "Resume",
-      "Body.": "Corps."
+      "Body.": "Corps.",
     });
 
     const result = await translatePostTranslation({
@@ -111,10 +119,10 @@ describe("translatePostTranslation", () => {
         summary: "Summary",
         contentMarkdown: "Body.",
         seoTitle: null,
-        seoDescription: undefined
+        seoDescription: undefined,
       },
       targetLocale: "fr",
-      providerClient: provider
+      providerClient: provider,
     });
 
     expect(result.seoTitle).toBeNull();
@@ -128,7 +136,7 @@ describe("translatePostTranslation", () => {
       Title: "Titre",
       Summary: "Resume",
       "Body.": "Corps.",
-      "SEO title": "Titre SEO"
+      "SEO title": "Titre SEO",
     });
 
     const result = await translatePostTranslation({
@@ -137,22 +145,30 @@ describe("translatePostTranslation", () => {
         title: "Title",
         summary: "Summary",
         contentMarkdown: "Body.",
-        seoTitle: "SEO title"
+        seoTitle: "SEO title",
       },
       targetLocale: "fr",
-      providerClient: provider
+      providerClient: provider,
     });
 
     expect(result.seoTitle).toBe("Titre SEO");
     expect(result.seoDescription).toBeNull();
-    expect(provider.requests.map(extractMarkdownFragment)).toEqual(["Title", "Summary", "Body.", "SEO title"]);
+    expect(provider.requests.map(extractMarkdownFragment)).toEqual([
+      "Title",
+      "Summary",
+      "Body.",
+      "SEO title",
+    ]);
   });
 
   it("keeps contentMarkdown structure validation enabled while plain text fields skip it", async () => {
     const provider = new PromptAwareProvider({
       "[Docs](https://example.com)": "[Guides](https://changed.example)",
       Summary: "Resume",
-      "[Link](https://example.com)": ["[Lien](https://changed.example)", "[Lien](https://example.com)"]
+      "[Link](https://example.com)": [
+        "[Lien](https://changed.example)",
+        "[Lien](https://example.com)",
+      ],
     });
 
     const result = await translatePostTranslation({
@@ -160,10 +176,10 @@ describe("translatePostTranslation", () => {
         locale: "en",
         title: "[Docs](https://example.com)",
         summary: "Summary",
-        contentMarkdown: "[Link](https://example.com)"
+        contentMarkdown: "[Link](https://example.com)",
       },
       targetLocale: "fr",
-      providerClient: provider
+      providerClient: provider,
     });
 
     expect(result.title).toBe("[Guides](https://changed.example)");
@@ -172,7 +188,7 @@ describe("translatePostTranslation", () => {
       "[Docs](https://example.com)",
       "Summary",
       "[Link](https://example.com)",
-      "[Link](https://example.com)"
+      "[Link](https://example.com)",
     ]);
   });
 
@@ -180,7 +196,10 @@ describe("translatePostTranslation", () => {
     const provider = new PromptAwareProvider({
       Title: "Titre",
       Summary: "Resume",
-      "[Link](https://example.com)": ["[Lien](https://changed.example)", "[Lien](https://still-changed.example)"]
+      "[Link](https://example.com)": [
+        "[Lien](https://changed.example)",
+        "[Lien](https://still-changed.example)",
+      ],
     });
 
     const result = await translatePostTranslation({
@@ -188,23 +207,23 @@ describe("translatePostTranslation", () => {
         locale: "en",
         title: "Title",
         summary: "Summary",
-        contentMarkdown: "[Link](https://example.com)"
+        contentMarkdown: "[Link](https://example.com)",
       },
       targetLocale: "fr",
-      providerClient: provider
+      providerClient: provider,
     });
 
     expect(result.contentMarkdown).toBe("[Lien](https://still-changed.example)");
     expect(result.warnings).toEqual([
-      "Chunk 0 validation failed: Link URL changed at index 0: expected https://example.com, received https://still-changed.example."
+      "Chunk 0 validation failed: Link URL changed at index 0: expected https://example.com, received https://still-changed.example.",
     ]);
     expect(result.chunks).toEqual([
       expect.objectContaining({
         index: 0,
         warnings: [
-          "Link URL changed at index 0: expected https://example.com, received https://still-changed.example."
-        ]
-      })
+          "Link URL changed at index 0: expected https://example.com, received https://still-changed.example.",
+        ],
+      }),
     ]);
   });
 });

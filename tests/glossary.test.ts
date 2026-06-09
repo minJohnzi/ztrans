@@ -26,13 +26,13 @@ describe("renderGlossaryForPrompt", () => {
     expect(
       renderGlossaryForPrompt([
         { source: "TwoRiver", target: "TwoRiver", note: "Project name, never translate." },
-        { source: "发布控制台", target: "publishing console" }
-      ])
+        { source: "发布控制台", target: "publishing console" },
+      ]),
     ).toBe(
       [
         "TwoRiver => TwoRiver (Project name, never translate.)",
-        "发布控制台 => publishing console"
-      ].join("\n")
+        "发布控制台 => publishing console",
+      ].join("\n"),
     );
   });
 
@@ -42,25 +42,25 @@ describe("renderGlossaryForPrompt", () => {
 
   it("rejects direct-render multiline source values", () => {
     expect(() =>
-      renderGlossaryForPrompt([{ source: "source\ninjected", target: "target" }])
+      renderGlossaryForPrompt([{ source: "source\ninjected", target: "target" }]),
     ).toThrow(expect.objectContaining({ code: "config_file_invalid" }));
   });
 
   it("rejects direct-render control characters in target values", () => {
     expect(() =>
-      renderGlossaryForPrompt([{ source: "source", target: "target\u0000injected" }])
+      renderGlossaryForPrompt([{ source: "source", target: "target\u0000injected" }]),
     ).toThrow(expect.objectContaining({ code: "config_file_invalid" }));
   });
 
   it("rejects direct-render multiline note values", () => {
     expect(() =>
-      renderGlossaryForPrompt([{ source: "source", target: "target", note: "note\rinjected" }])
+      renderGlossaryForPrompt([{ source: "source", target: "target", note: "note\rinjected" }]),
     ).toThrow(expect.objectContaining({ code: "config_file_invalid" }));
   });
 
   it("trims direct-render glossary values", () => {
     expect(
-      renderGlossaryForPrompt([{ source: "  source  ", target: "  target  ", note: "  note  " }])
+      renderGlossaryForPrompt([{ source: "  source  ", target: "  target  ", note: "  note  " }]),
     ).toBe("source => target (note)");
   });
 });
@@ -75,57 +75,57 @@ describe("loadGlossaryFile", () => {
         "    target: TwoRiver",
         "    note: Project name, never translate.",
         "  - source: API",
-        "    target: API"
-      ].join("\n")
+        "    target: API",
+      ].join("\n"),
     );
 
     await expect(loadGlossaryFile(filePath)).resolves.toEqual([
       { source: "TwoRiver", target: "TwoRiver", note: "Project name, never translate." },
-      { source: "API", target: "API" }
+      { source: "API", target: "API" },
     ]);
   });
 
   it("loads JSON glossary terms", async () => {
     const filePath = await writeTempFile(
       "glossary.json",
-      JSON.stringify({ terms: [{ source: "Fastify", target: "Fastify" }] })
+      JSON.stringify({ terms: [{ source: "Fastify", target: "Fastify" }] }),
     );
 
     await expect(loadGlossaryFile(filePath)).resolves.toEqual([
-      { source: "Fastify", target: "Fastify" }
+      { source: "Fastify", target: "Fastify" },
     ]);
   });
 
   it("rejects multiline source values", async () => {
     const filePath = await writeTempFile(
       "glossary.json",
-      JSON.stringify({ terms: [{ source: "source\ninjected", target: "target" }] })
+      JSON.stringify({ terms: [{ source: "source\ninjected", target: "target" }] }),
     );
 
     await expect(loadGlossaryFile(filePath)).rejects.toMatchObject({
-      code: "config_file_invalid"
+      code: "config_file_invalid",
     });
   });
 
   it("rejects multiline target values", async () => {
     const filePath = await writeTempFile(
       "glossary.json",
-      JSON.stringify({ terms: [{ source: "source", target: "target\rinjected" }] })
+      JSON.stringify({ terms: [{ source: "source", target: "target\rinjected" }] }),
     );
 
     await expect(loadGlossaryFile(filePath)).rejects.toMatchObject({
-      code: "config_file_invalid"
+      code: "config_file_invalid",
     });
   });
 
   it("rejects multiline note values", async () => {
     const filePath = await writeTempFile(
       "glossary.json",
-      JSON.stringify({ terms: [{ source: "source", target: "target", note: "note\ninjected" }] })
+      JSON.stringify({ terms: [{ source: "source", target: "target", note: "note\ninjected" }] }),
     );
 
     await expect(loadGlossaryFile(filePath)).rejects.toMatchObject({
-      code: "config_file_invalid"
+      code: "config_file_invalid",
     });
   });
 
@@ -133,19 +133,19 @@ describe("loadGlossaryFile", () => {
     const filePath = await writeTempFile(
       "glossary.json",
       JSON.stringify({
-        terms: [{ source: "  source  ", target: "  target  ", note: "  note  " }]
-      })
+        terms: [{ source: "  source  ", target: "  target  ", note: "  note  " }],
+      }),
     );
 
     await expect(loadGlossaryFile(filePath)).resolves.toEqual([
-      { source: "source", target: "target", note: "note" }
+      { source: "source", target: "target", note: "note" },
     ]);
   });
 
   it("throws config_file_invalid for invalid glossary files without leaking contents", async () => {
     const filePath = await writeTempFile(
       "glossary.json",
-      JSON.stringify({ terms: [{ source: "secret-source" }] })
+      JSON.stringify({ terms: [{ source: "secret-source" }] }),
     );
 
     try {

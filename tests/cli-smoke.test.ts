@@ -18,8 +18,12 @@ describe("CLI scaffold", () => {
   it("smoke-runs init through the Commander program", async () => {
     let stdout = "";
     const program = buildCliProgram({
-      stdout: { write: (chunk: string) => { stdout += chunk; } },
-      stderr: { write: () => undefined }
+      stdout: {
+        write: (chunk: string) => {
+          stdout += chunk;
+        },
+      },
+      stderr: { write: () => undefined },
     });
 
     await program.parseAsync(["node", "md-translator", "init"], { from: "node" });

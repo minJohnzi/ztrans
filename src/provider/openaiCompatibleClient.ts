@@ -46,7 +46,7 @@ export class OpenAICompatibleClient implements LlmProvider {
       throw new TranslatorError("provider_request_failed", "Provider request failed.", {
         status: response.status,
         statusText: response.statusText,
-        url
+        url,
       });
     }
 
@@ -57,7 +57,7 @@ export class OpenAICompatibleClient implements LlmProvider {
       throw new TranslatorError(
         "provider_response_malformed",
         "Provider response did not include message content.",
-        { url }
+        { url },
       );
     }
 
@@ -67,9 +67,9 @@ export class OpenAICompatibleClient implements LlmProvider {
         ? {
             promptTokens: data.usage.prompt_tokens,
             completionTokens: data.usage.completion_tokens,
-            totalTokens: data.usage.total_tokens
+            totalTokens: data.usage.total_tokens,
           }
-        : undefined
+        : undefined,
     };
   }
 
@@ -79,17 +79,17 @@ export class OpenAICompatibleClient implements LlmProvider {
         method: "POST",
         headers: {
           Authorization: `Bearer ${this.apiKey}`,
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           model: this.model,
           messages: request.messages,
-          temperature: request.temperature ?? 0.2
-        })
+          temperature: request.temperature ?? 0.2,
+        }),
       });
     } catch {
       throw new TranslatorError("provider_request_failed", "Provider request failed.", {
-        url
+        url,
       });
     }
   }
@@ -117,22 +117,30 @@ function normalizeBaseUrl(baseUrl?: string): string {
 
 async function parseChatCompletionsResponse(
   response: Response,
-  url: string
+  url: string,
 ): Promise<ChatCompletionsResponse> {
   let data: unknown;
 
   try {
     data = await response.json();
   } catch {
-    throw new TranslatorError("provider_response_malformed", "Provider response was not valid JSON.", {
-      url
-    });
+    throw new TranslatorError(
+      "provider_response_malformed",
+      "Provider response was not valid JSON.",
+      {
+        url,
+      },
+    );
   }
 
   if (!isResponseObject(data)) {
-    throw new TranslatorError("provider_response_malformed", "Provider response was not an object.", {
-      url
-    });
+    throw new TranslatorError(
+      "provider_response_malformed",
+      "Provider response was not an object.",
+      {
+        url,
+      },
+    );
   }
 
   return data;

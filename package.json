@@ -14,7 +14,13 @@
     }
   },
   "types": "./dist/index.d.ts",
-  "files": ["dist", "README.md", "LICENSE", ".env.example", "examples"],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    ".env.example",
+    "examples"
+  ],
   "scripts": {
     "build": "tsup",
     "typecheck": "tsc --noEmit",

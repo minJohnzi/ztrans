@@ -133,7 +133,7 @@ The CLI exits non-zero on validation failure by default. A future `--allow-warni
 translatePostTranslation({
   source,
   targetLocale,
-  provider
+  provider,
 });
 ```
 

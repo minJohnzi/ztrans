@@ -13,17 +13,14 @@ import { buildCliProgram } from "../src/cli.js";
 let tempDir: string | undefined;
 
 async function tempFile(name: string, contents: string): Promise<string> {
-  tempDir ??= await mkdtemp(join(tmpdir(), "md-translator-cli-"));
+  tempDir ??= await mkdtemp(join(tmpdir(), "ztrans-cli-"));
   const filePath = join(tempDir, name);
   await writeFile(filePath, contents, "utf8");
   return filePath;
 }
 
 function tempPath(name: string): string {
-  tempDir ??= join(
-    tmpdir(),
-    `md-translator-cli-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-  );
+  tempDir ??= join(tmpdir(), `ztrans-cli-${Date.now()}-${Math.random().toString(16).slice(2)}`);
 
   return join(tempDir, name);
 }
@@ -59,7 +56,7 @@ async function runCli(
 
   let exitCode = 0;
   try {
-    await program.parseAsync(["node", "md-translator", ...args], { from: "node" });
+    await program.parseAsync(["node", "ztrans", ...args], { from: "node" });
   } catch (error) {
     exitCode = Number((error as { exitCode?: number }).exitCode ?? 1);
   }
@@ -75,10 +72,10 @@ afterEach(async () => {
 });
 
 describe("buildCliProgram", () => {
-  it("configures the md-translator command with translate and init subcommands", () => {
+  it("configures the ztrans command with translate and init subcommands", () => {
     const program = buildCliProgram();
 
-    expect(program.name()).toBe("md-translator");
+    expect(program.name()).toBe("ztrans");
     expect(program.commands.map((command) => command.name()).sort()).toEqual(["init", "translate"]);
 
     const translate = program.commands.find((command) => command.name() === "translate");

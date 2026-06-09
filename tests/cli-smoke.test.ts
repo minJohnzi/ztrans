@@ -26,7 +26,7 @@ describe("CLI scaffold", () => {
       stderr: { write: () => undefined },
     });
 
-    await program.parseAsync(["node", "md-translator", "init"], { from: "node" });
+    await program.parseAsync(["node", "ztrans", "init"], { from: "node" });
 
     expect(stdout).toContain("provider:");
     expect(stdout).toContain("translation:");

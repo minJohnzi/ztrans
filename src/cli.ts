@@ -69,7 +69,7 @@ export function buildCliProgram(options: BuildCliProgramOptions = {}): Command {
 
   const program = new Command();
   program
-    .name("md-translator")
+    .name("ztrans")
     .description("Translate Markdown while preserving document structure.")
     .version(packageVersion)
     .exitOverride();

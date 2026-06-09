@@ -1,4 +1,4 @@
-import { translatePostTranslation } from "md-bilingual-translator";
+import { translatePostTranslation } from "ztrans";
 
 const result = await translatePostTranslation({
   source: {

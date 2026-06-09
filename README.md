@@ -1,8 +1,8 @@
-# md-bilingual-translator
+# zTrans
 
-`md-bilingual-translator` 是一个面向技术 Markdown 文档的双语翻译工具，既可以作为 CLI 使用，也可以作为 TypeScript library 调用。它通过 OpenAI-compatible / DeepSeek-compatible Chat Completions API 翻译中文或英文 Markdown，并尽量保持 Markdown 结构、链接、代码、frontmatter 和技术术语稳定。
+`zTrans` 是一个面向技术 Markdown 文档的双语翻译工具，既可以作为 CLI 使用，也可以作为 TypeScript library 调用。它通过 OpenAI-compatible / DeepSeek-compatible Chat Completions API 翻译中文或英文 Markdown，并尽量保持 Markdown 结构、链接、代码、frontmatter 和技术术语稳定。
 
-CLI 命令名是 `md-translator`。
+npm 包名和 CLI 命令名均为 `ztrans`。
 
 ## 当前定位
 
@@ -19,20 +19,20 @@ CLI 命令名是 `md-translator`。
 作为 library 安装到项目：
 
 ```sh
-pnpm add md-bilingual-translator
+pnpm add ztrans
 ```
 
 在本地项目里运行 CLI，推荐使用 `pnpm exec`：
 
 ```sh
-pnpm exec md-translator --help
+pnpm exec ztrans --help
 ```
 
 如果你希望全局使用裸命令，可以全局安装：
 
 ```sh
-pnpm add -g md-bilingual-translator
-md-translator --help
+pnpm add -g ztrans
+ztrans --help
 ```
 
 在本仓库开发或测试时，也可以直接运行构建后的 CLI：
@@ -82,31 +82,31 @@ node dist\cli.js translate examples\basic\Bayesian_Classifier.md --from en --to 
 翻译 Markdown 文件并写入指定输出路径：
 
 ```sh
-pnpm exec md-translator translate input.md --from zh --to en --out output.en.md
+pnpm exec ztrans translate input.md --from zh --to en --out output.en.md
 ```
 
 翻译并输出到 stdout：
 
 ```sh
-pnpm exec md-translator translate input.md --to en
+pnpm exec ztrans translate input.md --to en
 ```
 
 只检查 Markdown 结构，不调用 provider，也不需要 API key：
 
 ```sh
-pnpm exec md-translator translate input.md --check --json
+pnpm exec ztrans translate input.md --check --json
 ```
 
 打印示例 YAML 配置：
 
 ```sh
-pnpm exec md-translator init
+pnpm exec ztrans init
 ```
 
 常用参数：
 
 ```sh
-pnpm exec md-translator translate examples/basic/input.md \
+pnpm exec ztrans translate examples/basic/input.md \
   --config examples/basic/config.yml \
   --glossary examples/basic/glossary.yml \
   --out output.en.md
@@ -188,7 +188,7 @@ quality:
 
 ```ts
 import { readFile } from "node:fs/promises";
-import { translateMarkdown } from "md-bilingual-translator";
+import { translateMarkdown } from "ztrans";
 
 const markdown = await readFile("examples/basic/input.md", "utf8");
 
@@ -214,7 +214,7 @@ console.log(result.warnings);
 用 `createTranslator` 共享默认配置：
 
 ```ts
-import { createTranslator } from "md-bilingual-translator";
+import { createTranslator } from "ztrans";
 
 const translateToEnglish = createTranslator({
   targetLocale: "en",
@@ -284,7 +284,7 @@ terms:
 `translatePostTranslation` 可以翻译类似 TwoRiver Blog 的文章 translation 对象：
 
 ```ts
-import { translatePostTranslation } from "md-bilingual-translator";
+import { translatePostTranslation } from "ztrans";
 
 const result = await translatePostTranslation({
   source: {

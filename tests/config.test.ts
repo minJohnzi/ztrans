@@ -9,7 +9,7 @@ import { resolveProviderConfig } from "../src/config/env.js";
 let tempDir: string | undefined;
 
 async function writeTempFile(name: string, contents: string): Promise<string> {
-  tempDir ??= await mkdtemp(join(tmpdir(), "md-translator-config-"));
+  tempDir ??= await mkdtemp(join(tmpdir(), "ztrans-config-"));
   const filePath = join(tempDir, name);
   await writeFile(filePath, contents, "utf8");
   return filePath;

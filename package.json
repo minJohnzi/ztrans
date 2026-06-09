@@ -1,10 +1,10 @@
 {
-  "name": "md-bilingual-translator",
+  "name": "ztrans",
   "version": "0.1.0",
-  "description": "CLI and TypeScript library for translating technical Markdown with OpenAI-compatible LLM APIs while preserving structure.",
+  "description": "zTrans CLI and TypeScript library for translating technical Markdown with OpenAI-compatible LLM APIs while preserving structure.",
   "type": "module",
   "bin": {
-    "md-translator": "./dist/cli.js"
+    "ztrans": "./dist/cli.js"
   },
   "exports": {
     ".": {

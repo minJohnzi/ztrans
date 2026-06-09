@@ -8,7 +8,7 @@ import { loadGlossaryFile, renderGlossaryForPrompt } from "../src/translate/glos
 let tempDir: string | undefined;
 
 async function writeTempFile(name: string, contents: string): Promise<string> {
-  tempDir ??= await mkdtemp(join(tmpdir(), "md-translator-glossary-"));
+  tempDir ??= await mkdtemp(join(tmpdir(), "ztrans-glossary-"));
   const filePath = join(tempDir, name);
   await writeFile(filePath, contents, "utf8");
   return filePath;

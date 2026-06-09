@@ -244,6 +244,12 @@ function compareFrontmatter(
       );
     }
   }
+
+  for (const key of Object.keys(received.data).sort()) {
+    if (!(key in expected.data)) {
+      warnings.push(`Frontmatter key added: ${key}.`);
+    }
+  }
 }
 
 function compareHeadingDepths(

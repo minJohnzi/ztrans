@@ -49,6 +49,15 @@ describe("validateMarkdownStructure", () => {
     ).toEqual(["Frontmatter key missing: category."]);
   });
 
+  it("warns when translated frontmatter adds a key", () => {
+    expect(
+      validateMarkdownStructure(
+        "---\nslug: stable-post\n---\n# Title",
+        "---\nslug: stable-post\nreviewed: true\ndraft: false\n---\n# Title"
+      )
+    ).toEqual(["Frontmatter key added: draft.", "Frontmatter key added: reviewed."]);
+  });
+
   it("warns when heading count changes", () => {
     expect(validateMarkdownStructure("# One\n\n## Two", "# Uno")).toEqual([
       "Heading count changed: expected 2, received 1."

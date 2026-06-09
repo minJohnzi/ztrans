@@ -28,7 +28,7 @@ export interface BuildCliProgramOptions {
 
 interface TranslateCommandOptions {
   from?: string;
-  to: string;
+  to?: string;
   out?: string;
   model?: string;
   baseUrl?: string;
@@ -93,7 +93,7 @@ export function buildCliProgram(options: BuildCliProgramOptions = {}): Command {
     .description("Translate a Markdown file.")
     .argument("<input>", "Markdown input file")
     .option("--from <locale>", "source locale")
-    .requiredOption("--to <locale>", "target locale")
+    .option("--to <locale>", "target locale")
     .option("--out <file>", "write translated Markdown to a file")
     .option("--model <model>", "provider model")
     .option("--base-url <url>", "OpenAI-compatible base URL")
@@ -164,6 +164,8 @@ async function runTranslate(input: string, options: TranslateCommandOptions, run
   const maxChunkChars = options.maxChars ?? config.translation?.maxChunkChars;
   const concurrency = options.concurrency ?? config.translation?.concurrency;
 
+  assertTargetLocale(targetLocale);
+
   if (options.dryRun) {
     const plan = {
       input,
@@ -204,25 +206,39 @@ async function runTranslate(input: string, options: TranslateCommandOptions, run
 
   if (options.out) {
     await writeFile(options.out, result.markdown, "utf8");
-    if (options.json) {
-      printSuccess(runtime.stdout, true, { output: options.out, result });
-    } else {
-      write(runtime.stdout, `Wrote ${options.out}\n`);
-    }
-  } else if (options.json) {
-    printSuccess(runtime.stdout, true, { result });
+  }
+
+  if (options.json) {
+    write(runtime.stdout, `${JSON.stringify(jsonTranslatePayload(result))}\n`);
+  } else if (options.out) {
+    write(runtime.stdout, `Wrote ${options.out}\n`);
   } else {
     write(runtime.stdout, `${result.markdown}\n`);
   }
 
   if (result.warnings.length > 0) {
-    if (options.json) {
-      write(runtime.stdout, `${JSON.stringify({ ok: false, warnings: result.warnings })}\n`);
-    } else {
+    if (!options.json) {
       write(runtime.stderr, `Translation warnings:\n${result.warnings.map((warning) => `- ${warning}`).join("\n")}\n`);
     }
     throw new CommanderError(1, "translation_warnings", "Translation completed with warnings.");
   }
+}
+
+function assertTargetLocale(targetLocale: string | undefined): asserts targetLocale is string {
+  if (!targetLocale) {
+    throw new TranslatorError(
+      "unsupported_locale",
+      "Target locale is required. Pass --to or set translation.targetLocale in config."
+    );
+  }
+}
+
+function jsonTranslatePayload(result: TranslateMarkdownResult): Record<string, unknown> {
+  if (result.warnings.length > 0) {
+    return { ok: false, result, warnings: result.warnings };
+  }
+
+  return { ok: true, result };
 }
 
 function cliProviderConfig(options: TranslateCommandOptions): ProviderConfig {
@@ -300,11 +316,11 @@ if (isEntrypoint()) {
     await buildCliProgram().parseAsync(process.argv);
   } catch (error) {
     if (error instanceof CommanderError) {
-      process.exit(error.exitCode);
+      process.exitCode = error.exitCode;
+    } else {
+      const serialized = serializeError(error);
+      process.stderr.write(`${serialized.code}: ${serialized.message}\n`);
+      process.exitCode = 1;
     }
-
-    const serialized = serializeError(error);
-    process.stderr.write(`${serialized.code}: ${serialized.message}\n`);
-    process.exit(1);
   }
 }

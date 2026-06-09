@@ -11,7 +11,7 @@ import {
   resolveProviderConfig,
   serializeError,
   translateMarkdown,
-  TranslatorError
+  TranslatorError,
 } from "./index.js";
 import type { ProviderConfig, TranslateMarkdownOptions, TranslateMarkdownResult } from "./index.js";
 
@@ -49,7 +49,6 @@ const EXAMPLE_CONFIG = [
   "provider:",
   "  baseUrl: https://api.deepseek.com",
   "  model: deepseek-chat",
-  "  apiKey: ${LLM_API_KEY}",
   "translation:",
   "  sourceLocale: zh",
   "  targetLocale: en",
@@ -59,7 +58,7 @@ const EXAMPLE_CONFIG = [
   "  retryOnValidationFailure: true",
   "  maxRetries: 1",
   "  validateStructure: true",
-  ""
+  "",
 ].join("\n");
 
 export function buildCliProgram(options: BuildCliProgramOptions = {}): Command {
@@ -78,7 +77,7 @@ export function buildCliProgram(options: BuildCliProgramOptions = {}): Command {
   program.configureOutput({
     writeOut: (chunk) => write(stdout, chunk),
     writeErr: (chunk) => write(stderr, chunk),
-    outputError: (chunk, writeErr) => writeErr(chunk)
+    outputError: (chunk, writeErr) => writeErr(chunk),
   });
 
   program
@@ -114,7 +113,7 @@ export function buildCliProgram(options: BuildCliProgramOptions = {}): Command {
           stdout,
           stderr,
           env,
-          translateMarkdownImpl
+          translateMarkdownImpl,
         });
       } catch (error) {
         handleCliError(error, commandOptions.json === true, stdout, stderr);
@@ -131,25 +130,44 @@ interface Runtime {
   translateMarkdownImpl: (options: TranslateMarkdownOptions) => Promise<TranslateMarkdownResult>;
 }
 
-async function runTranslate(input: string, options: TranslateCommandOptions, runtime: Runtime): Promise<void> {
+async function runTranslate(
+  input: string,
+  options: TranslateCommandOptions,
+  runtime: Runtime,
+): Promise<void> {
   if (!existsSync(input)) {
     throw new TranslatorError("input_file_not_found", "Input file was not found.", { path: input });
   }
 
-  if (options.out && !options.force && !options.dryRun && !options.check && existsSync(options.out)) {
-    throw new TranslatorError("output_file_exists", "Output file already exists. Use --force to overwrite.", {
-      path: options.out
-    });
+  if (
+    options.out &&
+    !options.force &&
+    !options.dryRun &&
+    !options.check &&
+    existsSync(options.out)
+  ) {
+    throw new TranslatorError(
+      "output_file_exists",
+      "Output file already exists. Use --force to overwrite.",
+      {
+        path: options.out,
+      },
+    );
   }
 
   const markdown = await readFile(input, "utf8");
 
   if (options.check) {
     const signature = createStructureSignature(markdown);
-    printSuccess(runtime.stdout, options.json === true, {
-      mode: "check",
-      signature
-    }, `Structure signature:\n${JSON.stringify(signature, null, 2)}\n`);
+    printSuccess(
+      runtime.stdout,
+      options.json === true,
+      {
+        mode: "check",
+        signature,
+      },
+      `Structure signature:\n${JSON.stringify(signature, null, 2)}\n`,
+    );
     return;
   }
 
@@ -157,7 +175,7 @@ async function runTranslate(input: string, options: TranslateCommandOptions, run
   const provider = resolveProviderConfig({
     cli: cliProviderConfig(options),
     config: config.provider,
-    env: runtime.env
+    env: runtime.env,
   });
   const sourceLocale = options.from ?? config.translation?.sourceLocale;
   const targetLocale = options.to ?? config.translation?.targetLocale;
@@ -174,17 +192,22 @@ async function runTranslate(input: string, options: TranslateCommandOptions, run
       targetLocale,
       provider: {
         baseUrl: provider.baseUrl,
-        model: provider.model
+        model: provider.model,
       },
       maxChunkChars,
       concurrency,
       glossary: options.glossary,
-      style: options.style
+      style: options.style,
     };
-    printSuccess(runtime.stdout, options.json === true, {
-      mode: "dry-run",
-      plan
-    }, renderDryRunPlan(plan));
+    printSuccess(
+      runtime.stdout,
+      options.json === true,
+      {
+        mode: "dry-run",
+        plan,
+      },
+      renderDryRunPlan(plan),
+    );
     return;
   }
 
@@ -201,7 +224,7 @@ async function runTranslate(input: string, options: TranslateCommandOptions, run
     concurrency,
     retryOnValidationFailure: config.quality?.retryOnValidationFailure,
     maxRetries: config.quality?.maxRetries,
-    validateStructure: config.quality?.validateStructure
+    validateStructure: config.quality?.validateStructure,
   });
 
   if (options.out) {
@@ -218,7 +241,10 @@ async function runTranslate(input: string, options: TranslateCommandOptions, run
 
   if (result.warnings.length > 0) {
     if (!options.json) {
-      write(runtime.stderr, `Translation warnings:\n${result.warnings.map((warning) => `- ${warning}`).join("\n")}\n`);
+      write(
+        runtime.stderr,
+        `Translation warnings:\n${result.warnings.map((warning) => `- ${warning}`).join("\n")}\n`,
+      );
     }
     throw new CommanderError(1, "translation_warnings", "Translation completed with warnings.");
   }
@@ -228,7 +254,7 @@ function assertTargetLocale(targetLocale: string | undefined): asserts targetLoc
   if (!targetLocale) {
     throw new TranslatorError(
       "unsupported_locale",
-      "Target locale is required. Pass --to or set translation.targetLocale in config."
+      "Target locale is required. Pass --to or set translation.targetLocale in config.",
     );
   }
 }
@@ -245,7 +271,7 @@ function cliProviderConfig(options: TranslateCommandOptions): ProviderConfig {
   return {
     apiKey: options.apiKey,
     baseUrl: options.baseUrl,
-    model: options.model
+    model: options.model,
   };
 }
 
@@ -262,7 +288,7 @@ function printSuccess(
   stdout: WritableLike,
   json: boolean,
   payload: Record<string, unknown>,
-  humanText?: string
+  humanText?: string,
 ): void {
   if (json) {
     write(stdout, `${JSON.stringify({ ok: true, ...payload })}\n`);
@@ -283,11 +309,16 @@ function renderDryRunPlan(plan: Record<string, unknown>): string {
     `provider.model: ${(plan.provider as ProviderConfig).model}`,
     `maxChunkChars: ${plan.maxChunkChars ?? "(default)"}`,
     `concurrency: ${plan.concurrency ?? "(default)"}`,
-    ""
+    "",
   ].join("\n");
 }
 
-function handleCliError(error: unknown, json: boolean, stdout: WritableLike, stderr: WritableLike): never {
+function handleCliError(
+  error: unknown,
+  json: boolean,
+  stdout: WritableLike,
+  stderr: WritableLike,
+): never {
   if (error instanceof CommanderError) {
     throw error;
   }

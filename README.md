@@ -10,11 +10,17 @@ Requires Node.js 20 or newer.
 pnpm add md-bilingual-translator
 ```
 
-For local development in this repository:
+Run the CLI from a local project with `pnpm exec`:
 
 ```sh
-pnpm install
-pnpm build
+pnpm exec md-translator --help
+```
+
+For a global command, install globally:
+
+```sh
+pnpm add -g md-bilingual-translator
+md-translator --help
 ```
 
 ## CLI Usage
@@ -22,25 +28,25 @@ pnpm build
 Translate a Markdown file and write the result to a chosen output path:
 
 ```sh
-md-translator translate input.md --from zh --to en --out output.en.md
+pnpm exec md-translator translate input.md --from zh --to en --out output.en.md
 ```
 
 Translate to stdout:
 
 ```sh
-md-translator translate input.md --to en
+pnpm exec md-translator translate input.md --to en
 ```
 
 Check Markdown structure without calling a provider or requiring an API key:
 
 ```sh
-md-translator translate input.md --check --json
+pnpm exec md-translator translate input.md --check --json
 ```
 
 Print an example YAML config:
 
 ```sh
-md-translator init
+pnpm exec md-translator init
 ```
 
 `--to` is optional only when `translation.targetLocale` is set in a config file, or when using `--check`. Real translation and `--dry-run` both require a target locale from `--to` or config.
@@ -48,7 +54,7 @@ md-translator init
 Common options:
 
 ```sh
-md-translator translate examples/basic/input.md \
+pnpm exec md-translator translate examples/basic/input.md \
   --config examples/basic/config.yml \
   --glossary examples/basic/glossary.yml \
   --out output.en.md
@@ -83,12 +89,14 @@ OPENAI_BASE_URL=https://api.openai.com/v1
 OPENAI_MODEL=gpt-4.1-mini
 ```
 
+If both provider-specific aliases are set for the same field, `DEEPSEEK_*` wins over `OPENAI_*`.
+
 Configuration priority is:
 
 1. CLI args: `--api-key`, `--base-url`, `--model`
 2. Config file `provider` values
 3. `LLM_*` environment variables
-4. Provider-specific `DEEPSEEK_*` or `OPENAI_*` environment variables
+4. Provider-specific environment variables, with `DEEPSEEK_*` before `OPENAI_*`
 5. Defaults
 
 ## Config File
@@ -99,7 +107,6 @@ YAML and JSON config files are supported. These are the supported keys:
 provider:
   baseUrl: https://api.deepseek.com
   model: deepseek-chat
-  apiKey: ${LLM_API_KEY}
   temperature: 0.2
 translation:
   sourceLocale: zh
@@ -112,7 +119,7 @@ quality:
   validateStructure: true
 ```
 
-The config parser reads literal strings; it does not expand `${LLM_API_KEY}` by itself. Prefer leaving `provider.apiKey` out of committed config files and setting `LLM_API_KEY` in your environment.
+The config parser reads literal strings and config values outrank environment variables. Prefer leaving `provider.apiKey` out of config files and setting `LLM_API_KEY`, `DEEPSEEK_API_KEY`, or `OPENAI_API_KEY` in your environment. Use `--api-key` only for temporary local commands.
 
 ## Library Usage
 
@@ -128,9 +135,9 @@ const result = await translateMarkdown({
   provider: {
     apiKey: process.env.LLM_API_KEY,
     baseUrl: process.env.LLM_BASE_URL,
-    model: process.env.LLM_MODEL
+    model: process.env.LLM_MODEL,
   },
-  glossary: [{ source: "发布控制台", target: "publishing console" }]
+  glossary: [{ source: "发布控制台", target: "publishing console" }],
 });
 
 console.log(result.markdown);
@@ -147,14 +154,14 @@ const translateToEnglish = createTranslator({
   provider: {
     apiKey: process.env.LLM_API_KEY,
     baseUrl: process.env.LLM_BASE_URL,
-    model: process.env.LLM_MODEL
+    model: process.env.LLM_MODEL,
   },
-  validateStructure: true
+  validateStructure: true,
 });
 
 const result = await translateToEnglish({
   markdown: "## TwoRiver\n\nFastify serves the API.",
-  sourceLocale: "zh"
+  sourceLocale: "zh",
 });
 ```
 
@@ -175,7 +182,7 @@ Glossary values are inserted into translation prompts as caller-supplied data. F
 
 ## Markdown Preservation and Validation
 
-The translator parses Markdown, translates text chunks, and validates that protected structure is preserved. It is designed to keep code blocks, inline code, links, images, frontmatter, and headings intact while translating natural-language text.
+The translator parses Markdown, translates text chunks, and asks the provider to preserve Markdown structure. Validation checks frontmatter keys, heading structure, link and image URLs, inline code values, and fenced code block count/language. In v1, fenced code body text is not programmatically rewritten or protected beyond prompt instructions and validation metadata.
 
 Validation warnings are returned in library results and surfaced by the CLI. If a translation completes with warnings, the CLI reports them and exits non-zero so automation can catch structure drift. `--json` returns machine-readable success, warning, and error payloads.
 
@@ -193,14 +200,14 @@ const result = await translatePostTranslation({
     summary: "面向编辑团队的发布流程。",
     contentMarkdown: "## TwoRiver\n\n使用 Fastify 和 SQLite。",
     seoTitle: "TwoRiver 发布控制台",
-    seoDescription: null
+    seoDescription: null,
   },
   targetLocale: "en",
   provider: {
     apiKey: process.env.LLM_API_KEY,
     baseUrl: process.env.LLM_BASE_URL,
-    model: process.env.LLM_MODEL
-  }
+    model: process.env.LLM_MODEL,
+  },
 });
 ```
 

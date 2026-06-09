@@ -1,0 +1,12 @@
+provider:
+  baseUrl: https://api.deepseek.com
+  model: deepseek-chat
+translation:
+  sourceLocale: zh
+  targetLocale: en
+  maxChunkChars: 6000
+  concurrency: 1
+quality:
+  retryOnValidationFailure: true
+  maxRetries: 1
+  validateStructure: true

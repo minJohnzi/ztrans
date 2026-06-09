@@ -1,0 +1,12 @@
+terms:
+  - source: TwoRiver
+    target: TwoRiver
+    note: Product name; do not translate.
+  - source: Fastify
+    target: Fastify
+    note: Node.js web framework.
+  - source: SQLite
+    target: SQLite
+    note: Database engine name.
+  - source: 发布控制台
+    target: publishing console
